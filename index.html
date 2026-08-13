@@ -1,0 +1,615 @@
+# ============================================================
+# MNS CORE MVP & V3 EXTENSION - MARKET NAVIGATION SYSTEM
+# ============================================================
+from dataclasses import dataclass, field, asdict
+from enum import Enum
+from typing import Optional, List, Dict, Any
+from datetime import datetime, timezone
+import time
+
+try:
+    import MetaTrader5 as mt5
+except ImportError:
+    mt5 = None
+
+# ============================================================
+# 1. ENUMS
+# ============================================================
+class SystemStatus(str, Enum):
+    READY = "READY"
+    DEGRADED = "DEGRADED"
+    HALT = "HALT"
+
+class TrapState(str, Enum):
+    PREPARING = "PREPARING"
+    ARMED = "ARMED"
+    TRIGGERED = "TRIGGERED"
+    ACTIVE = "ACTIVE"
+    MISSED = "MISSED"
+    INVALIDATED = "INVALIDATED"
+    CANCELLED = "CANCELLED"
+
+class Action(str, Enum):
+    NONE = "NONE"
+    WATCH = "WATCH"
+    ARM = "ARM"
+    EXECUTE = "EXECUTE"
+    MANAGE = "MANAGE"
+    CANCEL = "CANCEL"
+
+# ============================================================
+# 2. MARKET DATA
+# ============================================================
+@dataclass
+class MarketSnapshot:
+    symbol: str
+    timeframe: str
+    bid: float
+    ask: float
+    timestamp: str
+    open: float
+    high: float
+    low: float
+    close: float
+    source: str = "UNKNOWN"
+
+    @property
+    def spread(self) -> float:
+        """
+        Spread belongs to MAP data. PLAN is responsible for using this value.
+        NAVI does not calculate it.
+        """
+        return round(self.ask - self.bid, 5)
+
+# ============================================================
+# 3. DATA QUALITY
+# ============================================================
+@dataclass
+class DataQuality:
+    source: str
+    timestamp: str
+    freshness_seconds: float
+    reliability: float
+    is_fact: bool = True
+    conflict: bool = False
+    status: str = "VALID"
+
+# ============================================================
+# 4. MAP STRUCTURE
+# ============================================================
+@dataclass
+class Structure:
+    swing_high: Optional[float] = None
+    swing_low: Optional[float] = None
+    trend: str = "UNKNOWN"
+    bos: Optional[str] = None
+    reversal: bool = False
+    displacement: Optional[str] = None
+
+@dataclass
+class Liquidity:
+    buy_side: List[float] = field(default_factory=list)
+    sell_side: List[float] = field(default_factory=list)
+    swept_high: Optional[float] = None
+    swept_low: Optional[float] = None
+
+@dataclass
+class SessionState:
+    name: Optional[str] = None
+    phase: Optional[str] = None
+
+@dataclass
+class EventState:
+    name: Optional[str] = None
+    event_time: Optional[str] = None
+    importance: str = "NONE"
+    minutes_to_event: Optional[int] = None
+
+@dataclass
+class MarketIntelligence:
+    time_behavior: List[Dict[str, Any]] = field(default_factory=list)
+    entity_activity: List[Dict[str, Any]] = field(default_factory=list)
+    news: List[Dict[str, Any]] = field(default_factory=list)
+    central_bank: List[Dict[str, Any]] = field(default_factory=list)
+    etf_flow: List[Dict[str, Any]] = field(default_factory=list)
+    futures_flow: List[Dict[str, Any]] = field(default_factory=list)
+    historical_memory: List[Dict[str, Any]] = field(default_factory=list)
+
+@dataclass
+class MAPPicture:
+    snapshot: MarketSnapshot
+    structure: Structure
+    liquidity: Liquidity
+    session: SessionState
+    event: EventState
+    intelligence: MarketIntelligence
+    location: str = "UNKNOWN"
+    market_cycle: str = "UNKNOWN"
+    conflicts: List[str] = field(default_factory=list)
+    quality_score: float = 0.0
+    ready: bool = False
+
+# ============================================================
+# 5. PLAN
+# ============================================================
+@dataclass
+class Plan:
+    plan_id: str
+    name: str
+    side: str
+    entry_low: float
+    entry_high: float
+    technical_sl: float
+    spread: float
+    execution_sl: float
+    tp1: Optional[float]
+    tp2: Optional[float]
+    trigger: str
+    invalidation: str
+    state: TrapState = TrapState.PREPARING
+    action: Action = Action.NONE
+    armed_timestamp: Optional[str] = None
+    armed_before_entry: bool = False
+
+# ============================================================
+# 6. NAVI
+# ============================================================
+@dataclass
+class NaviRoute:
+    primary: Optional[str]
+    secondary: Optional[str]
+    no_go: List[str]
+    final_action: Action
+
+# ============================================================
+# 7. SYSTEM PRE-FLIGHT SCAN
+# ============================================================
+class PreFlight:
+    REQUIRED_MODULES = ["DATA", "MAP", "PLAN", "NAVI"]
+
+    @staticmethod
+    def run(snapshot: MarketSnapshot) -> Dict[str, Any]:
+        errors = []
+        if not snapshot.symbol: errors.append("MISSING_SYMBOL")
+        if not snapshot.timeframe: errors.append("MISSING_TIMEFRAME")
+        if snapshot.bid <= 0: errors.append("INVALID_BID")
+        if snapshot.ask <= 0: errors.append("INVALID_ASK")
+        if snapshot.ask < snapshot.bid: errors.append("ASK_BELOW_BID")
+        if snapshot.high < snapshot.low: errors.append("INVALID_CANDLE_RANGE")
+        if not snapshot.timestamp: errors.append("MISSING_TIMESTAMP")
+        if not snapshot.source: errors.append("MISSING_DATA_SOURCE")
+
+        spread = snapshot.spread
+        if spread < 0: errors.append("INVALID_SPREAD")
+
+        if errors:
+            return {
+                "status": SystemStatus.HALT.value,
+                "errors": errors,
+                "spread": spread,
+                "modules": PreFlight.REQUIRED_MODULES,
+            }
+        return {
+            "status": SystemStatus.READY.value,
+            "errors": [],
+            "spread": spread,
+            "modules": PreFlight.REQUIRED_MODULES,
+        }
+
+# ============================================================
+# 8. DATA VALIDATION
+# ============================================================
+class DataValidator:
+    @staticmethod
+    def validate(snapshot: MarketSnapshot) -> Dict[str, Any]:
+        errors = []
+        if snapshot.high < snapshot.low: errors.append("HIGH_LOWER_THAN_LOW")
+        if not (snapshot.low <= snapshot.open <= snapshot.high): errors.append("OPEN_OUTSIDE_CANDLE")
+        if not (snapshot.low <= snapshot.close <= snapshot.high): errors.append("CLOSE_OUTSIDE_CANDLE")
+        if snapshot.bid <= 0: errors.append("INVALID_BID")
+        if snapshot.ask <= 0: errors.append("INVALID_ASK")
+        return {
+            "valid": len(errors) == 0,
+            "errors": errors,
+        }
+
+# ============================================================
+# 9. MAP ENGINE
+# ============================================================
+class MAPEngine:
+    def build(self, snapshot: MarketSnapshot) -> MAPPicture:
+        structure = self.detect_structure(snapshot)
+        liquidity = self.detect_liquidity(snapshot, structure)
+        session = self.detect_session()
+        event = self.detect_event()
+        intelligence = self.collect_intelligence()
+        location = self.detect_location(snapshot, structure)
+        cycle = self.detect_market_cycle(structure)
+        picture = MAPPicture(
+            snapshot=snapshot,
+            structure=structure,
+            liquidity=liquidity,
+            session=session,
+            event=event,
+            intelligence=intelligence,
+            location=location,
+            market_cycle=cycle,
+        )
+        picture.quality_score = self.quality_gate(picture)
+        picture.ready = picture.quality_score >= 70
+        return picture
+
+    def detect_structure(self, snapshot: MarketSnapshot) -> Structure:
+        if snapshot.close > snapshot.open:
+            trend = "BULLISH"
+        elif snapshot.close < snapshot.open:
+            trend = "BEARISH"
+        else:
+            trend = "NEUTRAL"
+        
+        displacement = None
+        candle_range = snapshot.high - snapshot.low
+        if candle_range > 0:
+            body = abs(snapshot.close - snapshot.open)
+            body_ratio = body / candle_range
+            if body_ratio >= 0.70:
+                displacement = "STRONG"
+            elif body_ratio >= 0.40:
+                displacement = "MODERATE"
+        return Structure(
+            swing_high=snapshot.high,
+            swing_low=snapshot.low,
+            trend=trend,
+            displacement=displacement,
+        )
+
+    def detect_liquidity(self, snapshot, structure):
+        return Liquidity(
+            buy_side=[structure.swing_high] if structure.swing_high else [],
+            sell_side=[structure.swing_low] if structure.swing_low else [],
+        )
+
+    def detect_session(self):
+        return SessionState(name="UNKNOWN", phase="UNKNOWN")
+
+    def detect_event(self):
+        return EventState(name=None, event_time=None, importance="NONE")
+
+    def collect_intelligence(self):
+        return MarketIntelligence()
+
+    def detect_location(self, snapshot, structure):
+        if structure.swing_high is None or structure.swing_low is None:
+            return "UNKNOWN"
+        midpoint = (structure.swing_high + structure.swing_low) / 2
+        if snapshot.close > midpoint:
+            return "UPPER"
+        if snapshot.close < midpoint:
+            return "LOWER"
+        return "MID"
+
+    def detect_market_cycle(self, structure):
+        if structure.trend == "BULLISH":
+            if structure.displacement == "STRONG":
+                return "UPSIDE_EXPANSION"
+            return "BULLISH_DEVELOPMENT"
+        if structure.trend == "BEARISH":
+            if structure.displacement == "STRONG":
+                return "DOWNSIDE_EXPANSION"
+            return "BEARISH_DEVELOPMENT"
+        return "UNDEFINED"
+
+    def quality_gate(self, picture):
+        score = 100
+        if picture.structure.trend == "UNKNOWN": score -= 25
+        if not picture.liquidity.buy_side: score -= 10
+        if not picture.liquidity.sell_side: score -= 10
+        if picture.conflicts: score -= 30
+        return max(0, min(100, score))
+
+# ============================================================
+# 10. PLAN ENGINE
+# ============================================================
+class PLANEngine:
+    def build_plans(self, picture: MAPPicture) -> List[Plan]:
+        if not picture.ready:
+            return []
+        plans = []
+        spread = picture.snapshot.spread
+        trend = picture.structure.trend
+
+        if trend == "BULLISH":
+            reference = picture.structure.swing_low
+            if reference is not None:
+                entry_low = reference + 2
+                entry_high = reference + 5
+                technical_sl = reference - 3
+                execution_sl = round(technical_sl - spread, 5)
+                tp1 = picture.structure.swing_high
+                tp2 = picture.structure.swing_high + (picture.structure.swing_high - reference)
+                plan = Plan(
+                    plan_id="PLAN_A",
+                    name="PULLBACK TRAP BUY",
+                    side="BUY",
+                    entry_low=round(entry_low, 5),
+                    entry_high=round(entry_high, 5),
+                    technical_sl=round(technical_sl, 5),
+                    spread=spread,
+                    execution_sl=execution_sl,
+                    tp1=round(tp1, 5) if tp1 else 0.0,
+                    tp2=round(tp2, 5) if tp2 else 0.0,
+                    trigger="Price enters prepared pullback zone and confirms support rejection",
+                    invalidation="Price breaks execution SL",
+                    state=TrapState.ARMED,
+                    action=Action.WATCH,
+                    armed_timestamp=picture.snapshot.timestamp,
+                    armed_before_entry=True,
+                )
+                plans.append(plan)
+
+        elif trend == "BEARISH":
+            reference = picture.structure.swing_high
+            if reference is not None:
+                entry_low = reference - 5
+                entry_high = reference - 2
+                technical_sl = reference + 3
+                execution_sl = round(technical_sl + spread, 5)
+                tp1 = picture.structure.swing_low
+                swing_range = reference - (picture.structure.swing_low if picture.structure.swing_low else reference)
+                tp2 = (picture.structure.swing_low if picture.structure.swing_low else reference) - (swing_range * 0.5)
+                plan = Plan(
+                    plan_id="PLAN_A",
+                    name="BREAKOUT FAILURE SHORT",
+                    side="SELL",
+                    entry_low=round(entry_low, 5),
+                    entry_high=round(entry_high, 5),
+                    technical_sl=round(technical_sl, 5),
+                    spread=spread,
+                    execution_sl=execution_sl,
+                    tp1=round(tp1, 5) if tp1 else 0.0,
+                    tp2=round(tp2, 5),
+                    trigger="Price reaches prepared breakout-failure zone and confirms rejection",
+                    invalidation="Price breaks execution SL",
+                    state=TrapState.ARMED,
+                    action=Action.WATCH,
+                    armed_timestamp=picture.snapshot.timestamp,
+                    armed_before_entry=True,
+                )
+                plans.append(plan)
+        return plans
+
+# ============================================================
+# 11. TRAP STATE ENGINE
+# ============================================================
+class TrapEngine:
+    @staticmethod
+    def update(plan: Plan, current_price: float, trap_was_armed: bool) -> Plan:
+        if not trap_was_armed:
+            if plan.entry_low <= current_price <= plan.entry_high:
+                plan.state = TrapState.MISSED
+                plan.action = Action.NONE
+            return plan
+
+        if plan.side == "BUY" and current_price <= plan.execution_sl:
+            plan.state = TrapState.INVALIDATED
+            plan.action = Action.CANCEL
+            return plan
+        if plan.side == "SELL" and current_price >= plan.execution_sl:
+            plan.state = TrapState.INVALIDATED
+            plan.action = Action.CANCEL
+            return plan
+
+        if plan.entry_low <= current_price <= plan.entry_high:
+            plan.state = TrapState.TRIGGERED
+            plan.action = Action.EXECUTE
+            return plan
+
+        plan.state = TrapState.ARMED
+        plan.action = Action.WATCH
+        return plan
+
+# ============================================================
+# 12. NAVI ENGINE
+# ============================================================
+class NAVIEngine:
+    def route(self, plans: List[Plan]) -> NaviRoute:
+        triggered = [p for p in plans if p.state in (TrapState.TRIGGERED, TrapState.ACTIVE)]
+        armed = [p for p in plans if p.state == TrapState.ARMED]
+        invalidated = [p for p in plans if p.state in (TrapState.INVALIDATED, TrapState.CANCELLED)]
+        missed = [p for p in plans if p.state == TrapState.MISSED]
+
+        primary = triggered[0].plan_id if triggered else (armed[0].plan_id if armed else None)
+        candidates = [p for p in armed if p.plan_id != primary]
+        secondary = candidates[0].plan_id if candidates else None
+
+        no_go = [plan.plan_id for plan in invalidated] + [plan.plan_id + ":MISSED" for plan in missed]
+
+        if triggered:
+            final_action = Action.MANAGE
+        elif armed:
+            final_action = Action.WATCH
+        else:
+            final_action = Action.NONE
+
+        return NaviRoute(primary=primary, secondary=secondary, no_go=no_go, final_action=final_action)
+
+# ============================================================
+# 13. MNS CORE PIPELINE
+# ============================================================
+class MNS:
+    def __init__(self):
+        self.map_engine = MAPEngine()
+        self.plan_engine = PLANEngine()
+        self.trap_engine = TrapEngine()
+        self.navi_engine = NAVIEngine()
+
+    def run(self, snapshot: MarketSnapshot) -> Dict[str, Any]:
+        preflight = PreFlight.run(snapshot)
+        if preflight["status"] == SystemStatus.HALT.value:
+            return {"system": "HALT", "stage": "PRE_FLIGHT", "preflight": preflight}
+
+        validation = DataValidator.validate(snapshot)
+        if not validation["valid"]:
+            return {"system": "HALT", "stage": "DATA_VALIDATION", "validation": validation}
+
+        picture = self.map_engine.build(snapshot)
+        if not picture.ready:
+            return {"system": "HALT", "stage": "MAP_QUALITY_GATE", "reason": "MAP QUALITY GATE FAILED", "map": asdict(picture)}
+
+        plans = self.plan_engine.build_plans(picture)
+        current_price = snapshot.close
+        for plan in plans:
+            plan = self.trap_engine.update(plan, current_price, plan.armed_before_entry)
+
+        route = self.navi_engine.route(plans)
+
+        return {
+            "system": SystemStatus.READY.value,
+            "preflight": preflight,
+            "map": asdict(picture),
+            "plans": [asdict(plan) for plan in plans],
+            "navi": asdict(route),
+        }
+
+# ============================================================
+# 14. NAVI REPORT
+# ============================================================
+def build_navi_report(snapshot: MarketSnapshot, plans: List[Plan], route: NaviRoute) -> str:
+    lines = [
+        "━━━━━━━━━━━━━━━━━━━━━━━━━━━━",
+        "🧭 MNS NAVI — ROUTE REPORT",
+        "━━━━━━━━━━━━━━━━━━━━━━━━━━━━",
+        f"MARKET: {snapshot.symbol} TIMEFRAME: {snapshot.timeframe} CURRENT PRICE: {snapshot.close:.5f}",
+        f"BUY: {snapshot.ask:.5f} SELL: {snapshot.bid:.5f} SPREAD: {snapshot.spread:.5f}",
+        "━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+    ]
+    for plan in plans:
+        lines.extend([
+            f"🔹 {plan.plan_id} — {plan.name}",
+            f"SIDE: {plan.side}",
+            f"STATE: {plan.state.value}",
+            f"ACTION: {plan.action.value}",
+            f"ENTRY: {plan.entry_low:.5f}–{plan.entry_high:.5f}",
+            f"SL: {plan.execution_sl:.5f}",
+            f"TP1: {format_price(plan.tp1)}",
+            f"TP2: {format_price(plan.tp2)}",
+            "━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+        ])
+    lines.extend([
+        "✅ NAVI DECISION",
+        f"PRIMARY: {route.primary or '—'}",
+        f"SECONDARY: {route.secondary or '—'}",
+        "NO-GO: " + (", ".join(route.no_go) if route.no_go else "—"),
+        f"FINAL ACTION: {route.final_action.value}",
+        "━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+    ])
+    return "\n".join(lines)
+
+def format_price(value: Optional[float]) -> str:
+    if value is None:
+        return "—"
+    return f"{value:.5f}"
+
+# ============================================================
+# 15. MT5 CONNECTOR V3 (OBSERVER / READ-ONLY)
+# ============================================================
+class MT5Connector:
+    @staticmethod
+    def initialize_and_fetch(symbol: str, timeframe_str: str) -> Optional[MarketSnapshot]:
+        if mt5 is None:
+            print("[MNS V3] MetaTrader5 module is not available.")
+            return None
+
+        if not mt5.initialize():
+            print(f"[MNS V3] MT5 initialization failed, error code = {mt5.last_error()}")
+            return None
+
+        tf_mapping = {
+            "1m": mt5.TIMEFRAME_M1,
+            "5m": mt5.TIMEFRAME_M5,
+            "15m": mt5.TIMEFRAME_M15,
+            "1h": mt5.TIMEFRAME_H1
+        }
+        tf = tf_mapping.get(timeframe_str, mt5.TIMEFRAME_M5)
+
+        symbol_info = mt5.symbol_info(symbol)
+        if symbol_info is None:
+            print(f"[MNS V3] Failed to fetch symbol info for {symbol}")
+            mt5.shutdown()
+            return None
+
+        if not symbol_info.visible:
+            if not mt5.symbol_select(symbol, True):
+                print(f"[MNS V3] Symbol {symbol} is not visible and select failed")
+                mt5.shutdown()
+                return None
+
+        rates = mt5.copy_rates_from_pos(symbol, tf, 0, 1)
+        if rates is None or len(rates) == 0:
+            print(f"[MNS V3] Failed to fetch rates for {symbol}")
+            mt5.shutdown()
+            return None
+
+        latest_candle = rates[0]
+        bid = symbol_info.bid
+        ask = symbol_info.ask
+        current_timestamp = datetime.now(timezone.utc).isoformat()
+
+        snapshot = MarketSnapshot(
+            symbol=symbol,
+            timeframe=timeframe_str,
+            bid=float(bid),
+            ask=float(ask),
+            timestamp=current_timestamp,
+            open=float(latest_candle['open']),
+            high=float(latest_candle['high']),
+            low=float(latest_candle['low']),
+            close=float(latest_candle['close']),
+            source="MT5_LIVE"
+        )
+
+        mt5.shutdown()
+        return snapshot
+
+# ============================================================
+# 16. MAIN EXECUTION V3
+# ============================================================
+if __name__ == "__main__":
+    USE_LIVE_MT5 = False  # สลับเป็น True หากต้องการดึงข้อมูลจากโปรแกรม MT5 จริง
+    SYMBOL = "XAU/USD"
+    TIMEFRAME = "5m"
+
+    print("=== MNS V3 RUNNING (TRADE NAVIGATOR ROOM) ===")
+    
+    if USE_LIVE_MT5:
+        snapshot = MT5Connector.initialize_and_fetch(symbol=SYMBOL, timeframe_str=TIMEFRAME)
+        if not snapshot:
+            print("[MNS V3] Fallback to Mock Snapshot.")
+            snapshot = MarketSnapshot(
+                symbol=SYMBOL, timeframe=TIMEFRAME, bid=4336.71, ask=4337.16,
+                timestamp="2026-08-13T18:38:00+07:00", open=4328.00, high=4338.00, low=4313.20, close=4336.71, source="FALLBACK"
+            )
+    else:
+        snapshot = MarketSnapshot(
+            symbol=SYMBOL,
+            timeframe=TIMEFRAME,
+            bid=4336.71,
+            ask=4337.16,
+            timestamp="2026-08-13T18:38:00+07:00",
+            open=4328.00,
+            high=4338.00,
+            low=4313.20,
+            close=4336.71,
+            source="MT5_MOCK",
+        )
+
+    mns = MNS()
+    result = mns.run(snapshot)
+
+    if result["system"] == "READY":
+        plans = [Plan(**plan) for plan in result["plans"]]
+        route = NaviRoute(**result["navi"])
+        print(build_navi_report(snapshot, plans, route))
+    else:
+        print("MNS HALT")
+        print(result)
