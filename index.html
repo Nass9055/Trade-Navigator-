@@ -1,0 +1,592 @@
+# ============================================================
+# MNS CORE V3.1 PRODUCTION READY - MARKET NAVIGATION SYSTEM
+# ============================================================
+from dataclasses import dataclass, field, asdict
+from enum import Enum
+from typing import Optional, List, Dict, Any
+from datetime import datetime, timezone
+import time
+
+try:
+    import MetaTrader5 as mt5
+except ImportError:
+    mt5 = None
+
+# ============================================================
+# 1. ENUMS
+# ============================================================
+class SystemStatus(str, Enum):
+    READY = "READY"
+    DEGRADED = "DEGRADED"
+    HALT = "HALT"
+
+class TrapState(str, Enum):
+    PREPARING = "PREPARING"
+    ARMED = "ARMED"
+    TRIGGERED = "TRIGGERED"
+    ACTIVE = "ACTIVE"
+    MISSED = "MISSED"
+    INVALIDATED = "INVALIDATED"
+    CANCELLED = "CANCELLED"
+
+class Action(str, Enum):
+    NONE = "NONE"
+    WATCH = "WATCH"
+    ARM = "ARM"
+    EXECUTE = "EXECUTE"
+    MANAGE = "MANAGE"
+    CANCEL = "CANCEL"
+
+# ============================================================
+# 2. MARKET DATA
+# ============================================================
+@dataclass
+class MarketSnapshot:
+    symbol: str
+    timeframe: str
+    bid: float
+    ask: float
+    timestamp: str
+    open: float
+    high: float
+    low: float
+    close: float
+    source: str = "UNKNOWN"
+
+    @property
+    def spread_raw(self) -> float:
+        return self.ask - self.bid
+
+    @property
+    def spread(self) -> float:
+        return round(self.spread_raw, 5)
+
+@dataclass
+class DataQuality:
+    source: str
+    timestamp: str
+    freshness_seconds: float
+    reliability: float
+    is_fact: bool = True
+    conflict: bool = False
+    status: str = "VALID"
+
+# ============================================================
+# 3. MAP STRUCTURE
+# ============================================================
+@dataclass
+class Structure:
+    swing_high: Optional[float] = None
+    swing_low: Optional[float] = None
+    trend: str = "UNKNOWN"
+    bos: Optional[str] = None
+    reversal: bool = False
+    displacement: Optional[str] = None
+    atr: float = 0.0
+
+@dataclass
+class Liquidity:
+    buy_side: List[float] = field(default_factory=list)
+    sell_side: List[float] = field(default_factory=list)
+    swept_high: Optional[float] = None
+    swept_low: Optional[float] = None
+
+@dataclass
+class SessionState:
+    name: Optional[str] = None
+    phase: Optional[str] = None
+
+@dataclass
+class EventState:
+    name: Optional[str] = None
+    event_time: Optional[str] = None
+    importance: str = "NONE"
+    minutes_to_event: Optional[int] = None
+
+@dataclass
+class MarketIntelligence:
+    time_behavior: List[Dict[str, Any]] = field(default_factory=list)
+    entity_activity: List[Dict[str, Any]] = field(default_factory=list)
+    news: List[Dict[str, Any]] = field(default_factory=list)
+    central_bank: List[Dict[str, Any]] = field(default_factory=list)
+    etf_flow: List[Dict[str, Any]] = field(default_factory=list)
+    futures_flow: List[Dict[str, Any]] = field(default_factory=list)
+    historical_memory: List[Dict[str, Any]] = field(default_factory=list)
+
+@dataclass
+class MAPPicture:
+    snapshot: MarketSnapshot
+    structure: Structure
+    liquidity: Liquidity
+    session: SessionState
+    event: EventState
+    intelligence: MarketIntelligence
+    location: str = "UNKNOWN"
+    market_cycle: str = "UNKNOWN"
+    conflicts: List[str] = field(default_factory=list)
+    quality_score: float = 0.0
+    ready: bool = False
+
+# ============================================================
+# 4. PLAN
+# ============================================================
+@dataclass
+class Plan:
+    plan_id: str
+    name: str
+    side: str
+    entry_low: float
+    entry_high: float
+    technical_sl: float
+    spread: float
+    execution_sl: float
+    tp1: Optional[float]
+    tp2: Optional[float]
+    trigger: str
+    invalidation: str
+    state: TrapState = TrapState.PREPARING
+    action: Action = Action.NONE
+    armed_timestamp: Optional[str] = None
+    armed_before_entry: bool = False
+
+# ============================================================
+# 5. NAVI
+# ============================================================
+@dataclass
+class NaviRoute:
+    primary: Optional[str]
+    secondary: Optional[str]
+    no_go: List[str]
+    final_action: Action
+
+# ============================================================
+# 6. SYSTEM PRE-FLIGHT SCAN
+# ============================================================
+class PreFlight:
+    REQUIRED_MODULES = ["DATA", "MAP", "PLAN", "NAVI"]
+    MAX_SPREAD = {"XAUUSD": 1.5, "EURUSD": 0.00030, "DEFAULT": 0.002}
+
+    @staticmethod
+    def run(snapshot: MarketSnapshot, event: Optional[EventState] = None) -> Dict[str, Any]:
+        errors = []
+        if not snapshot.symbol: errors.append("MISSING_SYMBOL")
+        if not snapshot.timeframe: errors.append("MISSING_TIMEFRAME")
+        if snapshot.bid <= 0: errors.append("INVALID_BID")
+        if snapshot.ask <= 0: errors.append("INVALID_ASK")
+        if snapshot.ask < snapshot.bid: errors.append("ASK_BELOW_BID")
+        if snapshot.high < snapshot.low: errors.append("INVALID_CANDLE_RANGE")
+
+        max_spread = PreFlight.MAX_SPREAD.get(snapshot.symbol, PreFlight.MAX_SPREAD["DEFAULT"])
+        if snapshot.spread_raw > max_spread:
+            errors.append(f"SPREAD_TOO_WIDE_{snapshot.spread_raw:.5f}")
+
+        if event and event.importance == "HIGH" and event.minutes_to_event is not None:
+            if abs(event.minutes_to_event) < 15:
+                errors.append("HIGH_IMPACT_NEWS_BLOCK")
+
+        if errors:
+            return {"status": SystemStatus.HALT.value, "errors": errors, "spread": snapshot.spread, "modules": PreFlight.REQUIRED_MODULES}
+        return {"status": SystemStatus.READY.value, "errors": [], "spread": snapshot.spread, "modules": PreFlight.REQUIRED_MODULES}
+
+# ============================================================
+# 7. DATA VALIDATION
+# ============================================================
+class DataValidator:
+    @staticmethod
+    def validate(snapshot: MarketSnapshot) -> Dict[str, Any]:
+        errors = []
+        if snapshot.high < snapshot.low: errors.append("HIGH_LOWER_THAN_LOW")
+        if not (snapshot.low <= snapshot.open <= snapshot.high): errors.append("OPEN_OUTSIDE_CANDLE")
+        if not (snapshot.low <= snapshot.close <= snapshot.high): errors.append("CLOSE_OUTSIDE_CANDLE")
+        if snapshot.bid <= 0 or snapshot.ask <= 0: errors.append("INVALID_BID_ASK")
+        return {"valid": len(errors) == 0, "errors": errors}
+
+# ============================================================
+# 8. MAP ENGINE (FIXED & COMPLETED)
+# ============================================================
+class MAPEngine:
+    def build(self, snapshot: MarketSnapshot, history: Optional[List[Dict]] = None) -> MAPPicture:
+        structure = self.detect_structure(snapshot, history)
+        liquidity = self.detect_liquidity(snapshot, structure)
+        session = self.detect_session()
+        event = self.detect_event()
+        intelligence = MarketIntelligence()
+        location = self.detect_location(snapshot, structure)
+        cycle = self.detect_market_cycle(structure)
+
+        picture = MAPPicture(snapshot=snapshot, structure=structure, liquidity=liquidity, session=session, event=event, intelligence=intelligence, location=location, market_cycle=cycle)
+        picture.quality_score = self.quality_gate(picture)
+        picture.ready = picture.quality_score >= 70
+        return picture
+
+    def detect_structure(self, snapshot: MarketSnapshot, history: Optional[List[Dict]] = None) -> Structure:
+        if history and len(history) >= 20:
+            highs = [c['high'] for c in history]
+            lows = [c['low'] for c in history]
+            closes = [c['close'] for c in history]
+
+            swing_high = max(highs)
+            swing_low = min(lows)
+
+            if closes[-1] > max(highs[:-1]):
+                trend = "BULLISH"
+            elif closes[-1] < min(lows[:-1]):
+                trend = "BEARISH"
+            else:
+                trend = "NEUTRAL"
+        else:
+            swing_high = snapshot.high
+            swing_low = snapshot.low
+            trend = "BULLISH" if snapshot.close > snapshot.open else "BEARISH"
+
+        candle_range = snapshot.high - snapshot.low
+        displacement = "STRONG" if candle_range > 0 and (abs(snapshot.close - snapshot.open) / candle_range) >= 0.7 else "MODERATE"
+
+        return Structure(
+            swing_high=swing_high,
+            swing_low=swing_low,
+            trend=trend,
+            displacement=displacement
+        )
+
+    def detect_liquidity(self, snapshot, structure):
+        return Liquidity(
+            buy_side=[structure.swing_high] if structure.swing_high else [],
+            sell_side=[structure.swing_low] if structure.swing_low else [],
+        )
+
+    def detect_session(self):
+        return SessionState(name="LONDON_NY", phase="ACTIVE")
+
+    def detect_event(self):
+        return EventState(name=None, event_time=None, importance="NONE", minutes_to_event=None)
+
+    def detect_location(self, snapshot, structure):
+        if structure.swing_high is None or structure.swing_low is None:
+            return "UNKNOWN"
+        midpoint = (structure.swing_high + structure.swing_low) / 2
+        if snapshot.close > midpoint:
+            return "UPPER"
+        if snapshot.close < midpoint:
+            return "LOWER"
+        return "MID"
+
+    def detect_market_cycle(self, structure):
+        if structure.trend == "BULLISH":
+            return "UPSIDE_EXPANSION"
+        elif structure.trend == "BEARISH":
+            return "DOWNSIDE_EXPANSION"
+        return "UNDEFINED"
+
+    def quality_gate(self, picture):
+        score = 100
+        if picture.structure.trend == "UNKNOWN": score -= 25
+        if not picture.liquidity.buy_side: score -= 10
+        if not picture.liquidity.sell_side: score -= 10
+        return max(0, min(100, score))
+
+# ============================================================
+# 9. PLAN ENGINE
+# ============================================================
+class PLANEngine:
+    def build_plans(self, picture: MAPPicture) -> List[Plan]:
+        if not picture.ready:
+            return []
+        plans = []
+        spread = picture.snapshot.spread
+        trend = picture.structure.trend
+
+        if trend == "BULLISH" and picture.structure.swing_low is not None:
+            reference = picture.structure.swing_low
+            plan = Plan(
+                plan_id="PLAN_A",
+                name="PULLBACK TRAP BUY",
+                side="BUY",
+                entry_low=round(reference + 2, 5),
+                entry_high=round(reference + 5, 5),
+                technical_sl=round(reference - 3, 5),
+                spread=spread,
+                execution_sl=round(reference - 3 - spread, 5),
+                tp1=round(picture.structure.swing_high, 5) if picture.structure.swing_high else 0.0,
+                tp2=round(picture.structure.swing_high + 10, 5) if picture.structure.swing_high else 0.0,
+                trigger="Price enters pullback zone and confirms support rejection",
+                invalidation="Price breaks execution SL",
+                state=TrapState.ARMED,
+                action=Action.WATCH,
+                armed_timestamp=picture.snapshot.timestamp,
+                armed_before_entry=True,
+            )
+            plans.append(plan)
+        elif trend == "BEARISH" and picture.structure.swing_high is not None:
+            reference = picture.structure.swing_high
+            plan = Plan(
+                plan_id="PLAN_A",
+                name="BREAKOUT FAILURE SHORT",
+                side="SELL",
+                entry_low=round(reference - 5, 5),
+                entry_high=round(reference - 2, 5),
+                technical_sl=round(reference + 3, 5),
+                spread=spread,
+                execution_sl=round(reference + 3 + spread, 5),
+                tp1=round(picture.structure.swing_low, 5) if picture.structure.swing_low else 0.0,
+                tp2=round(picture.structure.swing_low - 10, 5) if picture.structure.swing_low else 0.0,
+                trigger="Price reaches failure zone and confirms rejection",
+                invalidation="Price breaks execution SL",
+                state=TrapState.ARMED,
+                action=Action.WATCH,
+                armed_timestamp=picture.snapshot.timestamp,
+                armed_before_entry=True,
+            )
+            plans.append(plan)
+        return plans
+
+# ============================================================
+# 10. TRAP STATE ENGINE
+# ============================================================
+class TrapEngine:
+    @staticmethod
+    def update(plan: Plan, current_price: float) -> Plan:
+        if plan.side == "BUY" and current_price <= plan.execution_sl:
+            plan.state = TrapState.INVALIDATED
+            plan.action = Action.CANCEL
+            return plan
+        if plan.side == "SELL" and current_price >= plan.execution_sl:
+            plan.state = TrapState.INVALIDATED
+            plan.action = Action.CANCEL
+            return plan
+
+        if plan.entry_low <= current_price <= plan.entry_high:
+            plan.state = TrapState.TRIGGERED
+            plan.action = Action.EXECUTE
+            return plan
+
+        plan.state = TrapState.ARMED
+        plan.action = Action.WATCH
+        return plan
+
+# ============================================================
+# 11. NAVI ENGINE
+# ============================================================
+class NAVIEngine:
+    def route(self, plans: List[Plan]) -> NaviRoute:
+        triggered = [p for p in plans if p.state in (TrapState.TRIGGERED, TrapState.ACTIVE)]
+        armed = [p for p in plans if p.state == TrapState.ARMED]
+        invalidated = [p for p in plans if p.state in (TrapState.INVALIDATED, TrapState.CANCELLED)]
+
+        primary = triggered[0].plan_id if triggered else (armed[0].plan_id if armed else None)
+        secondary = armed[1].plan_id if len(armed) > 1 else None
+        no_go = [p.plan_id for p in invalidated]
+
+        if triggered:
+            final_action = Action.MANAGE
+        elif armed:
+            final_action = Action.WATCH
+        else:
+            final_action = Action.NONE
+
+        return NaviRoute(primary=primary, secondary=secondary, no_go=no_go, final_action=final_action)
+
+# ============================================================
+# 12. MNS CORE PIPELINE
+# ============================================================
+class MNS:
+    def __init__(self):
+        self.map_engine = MAPEngine()
+        self.plan_engine = PLANEngine()
+        self.trap_engine = TrapEngine()
+        self.navi_engine = NAVIEngine()
+
+    def run(self, snapshot: MarketSnapshot, history: Optional[List[Dict]] = None) -> Dict[str, Any]:
+        preflight = PreFlight.run(snapshot)
+        if preflight["status"] == SystemStatus.HALT.value:
+            return {"system": "HALT", "stage": "PRE_FLIGHT", "preflight": preflight}
+
+        validation = DataValidator.validate(snapshot)
+        if not validation["valid"]:
+            return {"system": "HALT", "stage": "DATA_VALIDATION", "validation": validation}
+
+        picture = self.map_engine.build(snapshot, history)
+        if not picture.ready:
+            return {"system": "HALT", "stage": "MAP_QUALITY_GATE", "reason": "MAP QUALITY GATE FAILED", "map": asdict(picture)}
+
+        plans = self.plan_engine.build_plans(picture)
+        for plan in plans:
+            plan = self.trap_engine.update(plan, snapshot.close)
+
+        route = self.navi_engine.route(plans)
+
+        return {
+            "system": SystemStatus.READY.value,
+            "preflight": preflight,
+            "map": asdict(picture),
+            "plans": [asdict(p) for p in plans],
+            "navi": asdict(route),
+        }
+
+# ============================================================
+# 13. NAVI REPORT BUILDER
+# ============================================================
+def build_navi_report(snapshot: MarketSnapshot, plans: List[Plan], route: NaviRoute) -> str:
+    lines = [
+        "━━━━━━━━━━━━━━━━━━━━━━━━━━━━",
+        "🧭 MNS V3.1 NAVI — ROUTE REPORT",
+        "━━━━━━━━━━━━━━━━━━━━━━━━━━━━",
+        f"MARKET: {snapshot.symbol} | TIMEFRAME: {snapshot.timeframe} | CLOSE: {snapshot.close:.5f}",
+        f"BID: {snapshot.bid:.5f} | ASK: {snapshot.ask:.5f} | SPREAD: {snapshot.spread:.5f}",
+        "━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+    ]
+    for plan in plans:
+        lines.extend([
+            f"🔹 {plan.plan_id} — {plan.name}",
+            f"SIDE: {plan.side} | STATE: {plan.state.value} | ACTION: {plan.action.value}",
+            f"ENTRY: {plan.entry_low:.5f}–{plan.entry_high:.5f} | SL: {plan.execution_sl:.5f}",
+            "━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+        ])
+    lines.extend([
+        "✅ NAVI DECISION",
+        f"PRIMARY: {route.primary or '—'}",
+        f"SECONDARY: {route.secondary or '—'}",
+        "NO-GO: " + (", ".join(route.no_go) if route.no_go else "—"),
+        f"FINAL ACTION: {route.final_action.value}",
+        "━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+    ])
+    return "\n".join(lines)
+
+# ============================================================
+# 14. MT5 DIRECT BOX (COMPONENT WIDGET - SAFEGUARDED)
+# ============================================================
+class MT5DirectBox:
+    def __init__(self, symbol: str, timeframe: str):
+        self.symbol = symbol
+        self.timeframe = timeframe
+        self.is_connected = False
+
+    def connect(self) -> bool:
+        if mt5 is None:
+            return False
+        try:
+            if mt5.initialize():
+                self.is_connected = True
+                return True
+        except Exception as e:
+            print(f"[MT5 Box] Connection Exception: {e}")
+        
+        self.is_connected = False
+        return False
+
+    def fetch_data(self) -> Optional[tuple]:
+        try:
+            if not self.is_connected:
+                if not self.connect():
+                    return None
+
+            symbol_info = mt5.symbol_info(self.symbol)
+            if not symbol_info:
+                return None
+
+            if not symbol_info.visible:
+                if not mt5.symbol_select(self.symbol, True):
+                    return None
+
+            tf_map = {
+                "1m": mt5.TIMEFRAME_M1,
+                "5m": mt5.TIMEFRAME_M5,
+                "15m": mt5.TIMEFRAME_M15,
+                "1h": mt5.TIMEFRAME_H1
+            }
+            tf = tf_map.get(self.timeframe, mt5.TIMEFRAME_M5)
+            rates = mt5.copy_rates_from_pos(self.symbol, tf, 0, 50)
+
+            if rates is None or len(rates) == 0:
+                return None
+
+            latest = rates[-1]
+            history = [{'open': float(r['open']), 'high': float(r['high']), 'low': float(r['low']), 'close': float(r['close'])} for r in rates]
+
+            snapshot = MarketSnapshot(
+                symbol=self.symbol,
+                timeframe=self.timeframe,
+                bid=float(symbol_info.bid),
+                ask=float(symbol_info.ask),
+                timestamp=datetime.now(timezone.utc).isoformat(),
+                open=float(latest['open']),
+                high=float(latest['high']),
+                low=float(latest['low']),
+                close=float(latest['close']),
+                source="MT5_DIRECT_BOX"
+            )
+            return snapshot, history
+        except Exception as e:
+            print(f"[MT5 Box] Fetch Data Error: {e}")
+            self.is_connected = False
+            return None
+
+    def disconnect(self):
+        if mt5 and self.is_connected:
+            try:
+                mt5.shutdown()
+            except:
+                pass
+            self.is_connected = False
+
+# ============================================================
+# 15. MAIN EXECUTION LOOP
+# ============================================================
+if __name__ == "__main__":
+    USE_LIVE_MT5 = False  # สลับเป็น True เมื่อรันบน PC ที่เปิด MT5 อยู่
+    SYMBOL = "XAUUSD"
+    TIMEFRAME = "5m"
+    POLL_INTERVAL = 5
+
+    print("==================================================")
+    print("🧭 TRADE NAVIGATOR ROOM: MNS V3.1 READY...")
+    print("==================================================")
+
+    mns = MNS()
+    mt5_box = MT5DirectBox(symbol=SYMBOL, timeframe=TIMEFRAME)
+
+    try:
+        while True:
+            snapshot = None
+            history = None
+
+            if USE_LIVE_MT5:
+                data = mt5_box.fetch_data()
+                if data:
+                    snapshot, history = data
+
+            if not snapshot:
+                snapshot = MarketSnapshot(
+                    symbol=SYMBOL,
+                    timeframe=TIMEFRAME,
+                    bid=4336.71,
+                    ask=4337.16,
+                    timestamp=datetime.now(timezone.utc).isoformat(),
+                    open=4328.00,
+                    high=4338.00,
+                    low=4313.20,
+                    close=4336.71,
+                    source="SIMULATED_BOX"
+                )
+                history = [{'open': 4328.0, 'high': 4338.0, 'low': 4313.2, 'close': 4336.71} for _ in range(25)]
+
+            result = mns.run(snapshot, history)
+
+            print("\033[H\033[J", end="")
+            print(f"🕒 ROOM SYNC: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')} | SOURCE: {snapshot.source}")
+
+            if result["system"] == "READY":
+                plans = [Plan(**p) for p in result["plans"]]
+                route = NaviRoute(**result["navi"])
+                print(build_navi_report(snapshot, plans, route))
+            else:
+                print("⚠️ MNS SYSTEM HALTED / WAITING FOR QUALITY GATE")
+                print(result)
+
+            print(f"\n[MT5 Box Status: {'CONNECTED' if mt5_box.is_connected else 'STANDBY/SIMULATION'}]")
+            print(f"Next sync in {POLL_INTERVAL}s... (Press Ctrl+C to exit)")
+            time.sleep(POLL_INTERVAL)
+
+    except KeyboardInterrupt:
+        mt5_box.disconnect()
+        print("\n\n🚪 Trade Navigator Room closed safely.")
