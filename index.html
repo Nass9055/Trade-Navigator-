@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>TRADE NAVIGATOR — MNS V2.0</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; font-family: system-ui, sans-serif; }
+    :root {
+      --bg: #0f172a; --card: #1e293b; --card-hover: #334155;
+      --accent: #3b82f6; --success: #10b981; --warning: #f59e0b; --danger: #ef4444;
+      --text: #f1f5f9; --muted: #94a3b8;
+    }
+    body { background: var(--bg); color: var(--text); min-height: 100vh; }
+    .container { max-width: 1200px; margin: 0 auto; padding: 2rem 1rem; }
+    header { text-align: center; margin-bottom: 3rem; }
+    h1 { font-size: 2.5rem; margin-bottom: 0.5rem; background: linear-gradient(135deg, #3b82f6, #8b5cf6); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+    .subtitle { color: var(--muted); font-size: 1.1rem; }
+    .section { margin-bottom: 3rem; }
+    h2 { font-size: 1.25rem; margin-bottom: 1.25rem; color: var(--accent); display: flex; align-items: center; gap: 0.5rem; }
+    .broker-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 1rem; }
+    .broker-card {
+      background: var(--card); border-radius: 12px; padding: 1.25rem; cursor: pointer;
+      transition: all 0.25s ease; border: 2px solid transparent;
+    }
+    .broker-card:hover { background: var(--card-hover); transform: translateY(-3px); }
+    .broker-card.selected { border-color: var(--accent); background: #1e3a8a40; }
+    .broker-name { font-weight: 600; font-size: 1.05rem; margin-bottom: 0.25rem; }
+    .broker-desc { font-size: 0.85rem; color: var(--muted); }
+    .form-group { margin-bottom: 1rem; }
+    label { display: block; margin-bottom: 0.4rem; font-size: 0.9rem; color: var(--muted); }
+    input, select {
+      width: 100%; padding: 0.75rem 1rem; border-radius: 8px; border: 1px solid #475569;
+      background: var(--card); color: var(--text); font-size: 0.95rem;
+    }
+    input:focus, select:focus { outline: none; border-color: var(--accent); }
+    .btn {
+      display: inline-flex; align-items: center; justify-content: center; gap: 0.5rem;
+      padding: 0.85rem 2rem; border-radius: 10px; border: none;
+      font-size: 1rem; font-weight: 600; cursor: pointer; transition: all 0.2s ease;
+    }
+    .btn-primary { background: var(--accent); color: white; width: 100%; }
+    .btn-primary:hover { background: #2563eb; }
+    .btn-success { background: var(--success); color: white; }
+    .divider { display: flex; align-items: center; gap: 1rem; margin: 2rem 0; color: var(--muted); }
+    .divider::before, .divider::after { content: ''; flex: 1; height: 1px; background: #334155; }
+    .status-box {
+      background: var(--card); border-radius: 10px; padding: 1.25rem; margin-top: 1.5rem;
+      display: none;
+    }
+    .status-box.show { display: block; }
+    .status-line { display: flex; justify-content: space-between; padding: 0.5rem 0; border-bottom: 1px solid #334155; }
+    .status-line:last-child { border-bottom: none; }
+    .ok { color: var(--success); }
+    .warn { color: var(--warning); }
+    .hidden { display: none !important; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1>🧭 TRADE NAVIGATOR</h1>
+      <p class="subtitle">Market Navigation System — MNS V2.0</p>
+    </header>
+
+    <!-- เลือกโบรกเกอร์ -->
+    <section class="section">
+      <h2>🔌 เลือกโบรกเกอร์</h2>
+      <div class="broker-grid" id="brokerGrid"></div>
+    </section>
+
+    <!-- ข้อมูลเชื่อมต่อ -->
+    <section class="section" id="connSection">
+      <h2>🔐 ข้อมูลเชื่อมต่อ MT5</h2>
+      <div class="form-group">
+        <label>เซิร์ฟเวอร์</label>
+        <select id="serverSelect"><option value="">-- เลือกเซิร์ฟเวอร์ --</option></select>
+      </div>
+      <div class="form-group">
+        <label>บัญชี / Login</label>
+        <input type="text" id="accountInput" placeholder="หมายเลขบัญชี MT5">
+      </div>
+      <div class="form-group">
+        <label>รหัสผ่าน</label>
+        <input type="password" id="passInput" placeholder="••••••••">
+      </div>
+      <div class="form-group">
+        <label>สัญลักษณ์ / คู่เงิน</label>
+        <select id="symbolSelect">
+          <option value="XAUUSD">XAUUSD (ทองคำ)</option>
+          <option value="EURUSD">EURUSD</option>
+          <option value="GBPUSD">GBPUSD</option>
+          <option value="USDJPY">USDJPY</option>
+        </select>
+      </div>
+      <button class="btn btn-primary" id="connectBtn">🚀 เชื่อมต่อ & เริ่มระบบ</button>
+    </section>
+
+    <!-- สถานะระบบ -->
+    <section class="section">
+      <h2>📋 Pre-Flight Scan</h2>
+      <div class="status-box" id="statusBox">
+        <div class="status-line"><span>สถานะ</span><span id="sysStatus">รอการเชื่อมต่อ...</span></div>
+        <div class="status-line"><span>โบรกเกอร์</span><span id="brokerInfo">-</span></div>
+        <div class="status-line"><span>สัญลักษณ์</span><span id="symbolInfo">-</span></div>
+        <div class="status-line"><span>ราคา Bid</span><span id="bidInfo">-</span></div>
+        <div class="status-line"><span>ราคา Ask</span><span id="askInfo">-</span></div>
+        <div class="status-line"><span>Spread</span><span id="spreadInfo">-</span></div>
+        <div class="status-line"><span>MAP Status</span><span id="mapStatus">-</span></div>
+      </div>
+    </section>
+
+    <div class="divider">หรือ</div>
+
+    <!-- เข้าใช้งานทดสอบ -->
+    <section class="section">
+      <button class="btn btn-success" style="width:100%;" id="demoBtn">🧭 เข้าใช้งาน MNS โดยตรง (โหมดทดสอบ)</button>
+    </section>
+  </div>
+
+  <script src="broker-registry.js"></script>
+  <script src="mns-core.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
