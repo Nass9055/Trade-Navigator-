@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Single Page Application</title>
+    <!-- Tailwind CSS v3.4.18 styling -->
+    <script src="https://cdn.tailwindcss.com/3.4.18"></script>
+</head>
+<body class="bg-slate-950 text-slate-100 min-h-screen flex flex-col font-sans">
+
+    <!-- ส่วนบนสุด: แถบลิงก์ Affiliate และพาร์ทเนอร์ -->
+    <header class="bg-slate-900 text-white py-2.5 px-4 text-xs md:text-sm border-b border-slate-800 shadow-md">
+      <div class="max-w-7xl mx-auto flex flex-col sm:flex-row justify-between items-center gap-2">
+        <div class="flex items-center gap-2 font-medium">
+          <span class="bg-emerald-500 text-slate-950 px-2 py-0.5 rounded text-[10px] font-bold">RECOMMENDED</span>
+          <span>ช่องทางแนะนำและพาร์ทเนอร์:</span>
+        </div>
+        
+        <div class="flex flex-wrap items-center gap-4">
+          <a href="https://one.exnessonelink.com/a/80dmb5wr12?source=app" target="_blank" rel="noopener noreferrer" class="hover:text-emerald-400 transition-colors">
+            Exness
+          </a>
+          <span class="text-slate-600">|</span>
+          <a href="https://www.xmglobal.com/referral?token=Jap-L9h7S19cmlEnDtElZA" target="_blank" rel="noopener noreferrer" class="hover:text-emerald-400 transition-colors">
+            XM Global
+          </a>
+          <span class="text-slate-600">|</span>
+          <a href="https://i.miactivitys.com/index-th-TH.html?c=FT9GU&na=TH&id=invite_260108_5.0&p=other&v=v4.3&t=1786761937590&n=en****en1@gmail.com&s=apply4" target="_blank" rel="noopener noreferrer" class="hover:text-emerald-400 transition-colors">
+            Activity
+          </a>
+          <span class="text-slate-600">|</span>
+          <a href="https://trendo.com/invite?market=googleplay&code=3199411" target="_blank" rel="noopener noreferrer" class="hover:text-emerald-400 transition-colors">
+            Trendo
+          </a>
+        </div>
+      </div>
+    </header>
+
+    <!-- พื้นที่หลักสำหรับติดตั้งแอปพลิเคชัน (React v18.3.1 DOM Container) -->
+    <main class="flex-grow flex items-center justify-center p-6">
+      <div id="root" class="w-full max-w-7xl mx-auto">
+        <!-- React Application จะถูกเรนเดอร์ลงใน div นี้[span_1](start_span)[span_1](end_span) -->
+      </div>
+    </main>
+
+    <!-- ตัวอย่างการโหลด React และ ReactDOM (เวอร์ชัน 18.3.1)[span_2](start_span)[span_2](end_span) -->
+    <script crossorigin src="https://unpkg.com/react@18.3.1/umd/react.production.min.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.production.min.js"></script>
+</body>
+</html>
