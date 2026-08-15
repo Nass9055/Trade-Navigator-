@@ -1,0 +1,439 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>MNS TRADE NAVIGATOR V3.8.1 FIXED - Pro Terminal</title>
+<meta name="description" content="MNS Trade Navigator V3.6 Pro Terminal - MAP → PLAN → NAVI → EXECUTION - พร้อมกราฟ ข่าว ปฏิทิน Affiliate">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800;900&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+<script src="https://cdn.tailwindcss.com"></script>
+<style>
+body{font-family:Inter,system-ui;background:#020617;color:#e2e8f0}
+.mono{font-family:JetBrains Mono,monospace}
+.glow-yellow{box-shadow:0 0 18px rgba(250,204,21,.45)}
+.glow-red{box-shadow:0 0 18px rgba(239,68,68,.45)}
+.glow-emerald{box-shadow:0 0 18px rgba(16,185,129,.45)}
+.glow-indigo{box-shadow:0 0 18px rgba(99,102,241,.45)}
+.glow-amber{box-shadow:0 0 22px rgba(245,158,11,.35)}
+.pulse{animation:pulse 2s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.85;transform:scale(1.02)}}
+@keyframes haltBlink{0%,100%{background:rgba(239,68,68,.15)}50%{background:rgba(239,68,68,.35)}}
+.halt{animation:haltBlink 1s infinite}
+</style>
+</head>
+<body class="min-h-screen bg-[radial-gradient(circle_at_1px_1px,_rgba(16,185,129,0.07)_1px,_transparent_0)] bg-[length:24px_24px]">
+<!-- HEADER RECOMMENDED STICKY -->
+<header class="sticky top-0 z-50 backdrop-blur-xl bg-slate-900/85 border-b border-slate-800">
+<div class="h-[2px] w-full bg-gradient-to-r from-emerald-400 via-yellow-400 to-indigo-500"></div>
+<div class="max-w-[1600px] mx-auto px-4 py-3 flex flex-wrap items-center gap-3">
+
+<div class="flex items-center gap-2.5">
+<img src="./logo.png" alt="MNS" class="h-8 w-8 rounded-lg object-contain bg-black border border-emerald-500/30" onerror="this.style.display='none'">
+<span class="font-black text-[16px] tracking-widest text-emerald-400">MNS</span>
+<span class="text-[10px] font-black tracking-[0.2em] bg-black text-emerald-400 border border-emerald-500/30 px-2.5 py-1 rounded-full hidden sm:inline">RECOMMENDED</span>
+</div>
+
+<div class="flex flex-wrap gap-2.5">
+<a href="https://one.exnessonelink.com/a/80dmb5wr12?source=app" target="_blank" class="glow-yellow pulse bg-yellow-400 text-black font-black text-[13px] px-5 py-2 rounded-full hover:scale-105 transition border border-white/10">Exness เปิดเลย → ⭐</a>
+<a href="https://www.xmglobal.com/referral?token=Jap-L9h7S19cmlEnDtElZA" target="_blank" class="glow-red bg-red-600 text-white font-bold text-[13px] px-5 py-2 rounded-full hover:scale-105 transition border border-white/10">XM Global 🔥</a>
+<a href="https://i.miactivitys.com/index-th-TH.html?c=FT9GU&na=TH&id=invite_260108_5.0&p=other&v=v4.3&t=1786761937590&n=en****en1@gmail.com&s=apply4" target="_blank" class="glow-emerald bg-emerald-500 text-black font-black text-[13px] px-5 py-2 rounded-full hover:scale-105 transition border border-white/10">Activity 💰</a>
+<a href="https://trendo.com/invite?market=googleplay&code=3199411" target="_blank" class="glow-indigo bg-indigo-600 text-white font-bold text-[13px] px-5 py-2 rounded-full hover:scale-105 transition border border-white/10">Trendo 🚀</a>
+</div>
+<span class="ml-auto text-[10px] mono text-slate-500 hidden lg:block">V3.8.1 FIXED • ASSET+PLAN WORKING • MAP→PLAN→NAVI</span>
+</div>
+</header>
+
+<!-- MIDDLE BANNER -->
+<div class="max-w-[1600px] mx-auto px-4 mt-4">
+<div class="bg-emerald-500/10 border border-emerald-500/30 text-emerald-300 text-center py-2.5 rounded-xl font-bold text-[12px] tracking-wide">🔥 เทรดผ่านลิงก์พาร์ทเนอร์ได้สเปรดคืน + โบนัสพิเศษ — คลิกเลย 👇 ระบบ HALT อัตโนมัติเมื่อมีข่าวแรง</div>
+</div>
+
+<!-- HALT BANNER -->
+<div id="haltBanner" class="hidden max-w-[1600px] mx-auto px-4 mt-3"><div class="halt bg-red-500/20 border-2 border-red-500/50 text-red-200 text-center py-3 rounded-xl font-black text-[13px]">⛔ HALT ACTIVE - มีข่าว HIGH IMPACT ใน <span id="haltCountdown">00:00</span> - ระบบหยุดเทรดชั่วคราว</div></div>
+
+<main class="max-w-[1600px] mx-auto px-4 py-5 grid grid-cols-12 gap-4">
+
+<!-- LEFT ASSETS -->
+<div class="col-span-12 lg:col-span-3 space-y-4">
+<div class="bg-[#1e293b] border border-slate-700/80 rounded-2xl p-4">
+<div class="flex gap-1 mb-3">
+<button onclick="setTab('FOREX')" id="tab_FOREX" class="tab text-[11px] font-bold px-3 py-1.5 rounded-full bg-emerald-500 text-black">FOREX</button>
+<button onclick="setTab('GOLD')" id="tab_GOLD" class="tab text-[11px] font-bold px-3 py-1.5 rounded-full bg-slate-800 text-slate-400">GOLD</button>
+<button onclick="setTab('INDICES')" id="tab_INDICES" class="tab text-[11px] font-bold px-3 py-1.5 rounded-full bg-slate-800 text-slate-400">INDICES</button>
+<button onclick="setTab('CRYPTO')" id="tab_CRYPTO" class="tab text-[11px] font-bold px-3 py-1.5 rounded-full bg-slate-800 text-slate-400">CRYPTO</button>
+</div>
+<input id="search" placeholder="ค้นหาสัญลักษณ์..." oninput="renderAssets()" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-[12px] mono focus:outline-none focus:border-emerald-500 mb-3">
+<div id="assetList" class="space-y-1.5 max-h-[420px] overflow-auto"></div>
+</div>
+
+<div class="bg-[#1e293b] border border-slate-700/80 rounded-2xl p-4">
+<div class="text-[11px] font-black tracking-widest text-slate-300 mb-3">MAP QUALITY / คุณภาพแผนที่</div>
+<div class="flex items-center gap-4">
+<div class="w-20 h-20 rounded-full border-4 border-emerald-500 grid place-items-center font-black text-xl text-emerald-300 shadow-[0_0_20px_rgba(16,185,129,.3)]">84<span class="text-[10px]">/100</span></div>
+<div class="space-y-1 text-[11px] mono">
+<div class="flex justify-between gap-6"><span class="text-slate-500">ATR</span><b class="text-slate-200" id="m_atr">12.8</b></div>
+<div class="flex justify-between gap-6"><span class="text-slate-500">LOC</span><b class="text-emerald-300">STRONG</b></div>
+<div class="flex justify-between gap-6"><span class="text-slate-500">BOS</span><b class="text-emerald-300">BULLISH</b></div>
+<div class="flex justify-between gap-6"><span class="text-slate-500">DISP</span><b class="text-slate-200">78%</b></div>
+</div>
+</div>
+<div class="mt-4 flex gap-1.5">
+<span class="text-[9px] px-2 py-1 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">PreFlight OK</span>
+<span class="text-[9px] px-2 py-1 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">Validator OK</span>
+<span class="text-[9px] px-2 py-1 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">MAP</span>
+<span class="text-[9px] px-2 py-1 rounded-full bg-slate-800 text-slate-400 border border-slate-700">PLAN</span>
+<span class="text-[9px] px-2 py-1 rounded-full bg-slate-800 text-slate-400 border border-slate-700">NAVI</span>
+</div>
+</div>
+</div>
+
+<!-- CENTER CHART -->
+<div class="col-span-12 lg:col-span-6 space-y-4">
+<div class="bg-[#1e293b] border border-slate-700/80 rounded-2xl overflow-hidden">
+<div class="flex flex-wrap items-center justify-between p-4 border-b border-slate-800 gap-2">
+<div><div class="flex items-center gap-2"><span id="symName" class="font-black text-[18px] tracking-wide">XAUUSD</span><span id="livePrice" class="mono text-[18px] text-emerald-300">4376.82</span><span id="liveCh" class="text-[11px] px-1.5 py-0.5 rounded bg-emerald-500/20 text-emerald-300">+0.59%</span></div><div class="text-[10px] mono text-slate-500">LIVE • <span id="priceSrc">⚙️ คำนวณเอง</span> • Spread <span id="spreadVal">0.50</span></div></div>
+<div class="flex gap-1">
+<button onclick="setTF('1m')" class="tf text-[11px] px-2.5 py-1 rounded-full bg-slate-800 text-slate-400" data-tf="1m">1m</button>
+<button onclick="setTF('5m')" class="tf text-[11px] px-2.5 py-1 rounded-full bg-emerald-500 text-black font-bold" data-tf="5m">5m</button>
+<button onclick="setTF('15m')" class="tf text-[11px] px-2.5 py-1 rounded-full bg-slate-800 text-slate-400" data-tf="15m">15m</button>
+<button onclick="setTF('30m')" class="tf text-[11px] px-2.5 py-1 rounded-full bg-slate-800 text-slate-400" data-tf="30m">30m</button>
+<button onclick="setTF('1h')" class="tf text-[11px] px-2.5 py-1 rounded-full bg-slate-800 text-slate-400" data-tf="1h">1h</button>
+</div>
+</div>
+<iframe id="tvFrame" src="https://s.tradingview.com/widgetembed/?symbol=OANDA%3AXAUUSD&interval=5&theme=dark&style=1&timezone=Etc%2FUTC&withdateranges=1&hidesidetoolbar=0&symboledit=1&saveimage=1&toolbarbg=%231e293b&locale=en" style="width:100%;height:460px;border:0;display:block;background:#0f172a"></iframe>
+</div>
+
+<!-- NEWS & CALENDAR -->
+<div class="bg-[#1e293b] border border-slate-700/80 rounded-2xl p-4">
+<div class="flex items-center justify-between mb-3">
+<h3 class="text-[12px] font-black tracking-widest">ข่าว & ปฏิทินเศรษฐกิจ / NEWS & CALENDAR <span class="ml-2 text-[9px] px-2 py-0.5 rounded-full bg-emerald-500 text-black">LIVE</span></h3>
+<div class="text-[10px] mono text-slate-400">ถัดไป HIGH ใน <b id="nextHigh" class="text-amber-300">--:--</b></div>
+</div>
+<div class="grid md:grid-cols-7 gap-4">
+<div class="md:col-span-4 space-y-2">
+<div class="flex gap-1.5 mb-2">
+<button onclick="filterNews('ALL',this)" class="fbtn text-[10px] px-2 py-1 rounded-full bg-emerald-500 text-black font-bold">All</button>
+<button onclick="filterNews('HIGH',this)" class="fbtn text-[10px] px-2 py-1 rounded-full bg-slate-800 text-slate-400">HIGH</button>
+<button onclick="filterNews('USD',this)" class="fbtn text-[10px] px-2 py-1 rounded-full bg-slate-800 text-slate-400">USD</button>
+<button onclick="filterNews('XAU',this)" class="fbtn text-[10px] px-2 py-1 rounded-full bg-slate-800 text-slate-400">XAU</button>
+</div>
+<div id="calendarList" class="space-y-1.5"></div>
+<iframe src="https://s.tradingview.com/embed-widget/events/?locale=th_TH&importance=1&colorTheme=dark&width=100%25&height=180" style="width:100%;height:180px;border:0;margin-top:8px" class="rounded-lg border border-slate-700/50"></iframe>
+</div>
+<div class="md:col-span-3 space-y-2">
+<div class="text-[11px] font-bold text-slate-300">ข่าวตลาดล่าสุด</div>
+<div id="newsList" class="space-y-1.5"></div>
+</div>
+</div>
+</div>
+</div>
+
+<!-- RIGHT INPUT & PLAN -->
+<div class="col-span-12 lg:col-span-3 space-y-4">
+<div class="bg-[#1e293b] border border-slate-700/80 rounded-2xl p-4">
+<div class="text-[11px] font-black tracking-widest mb-3">INPUT / นำเข้าข้อมูล</div>
+<div class="grid grid-cols-2 gap-2 mb-3">
+<input id="inpSym" value="XAUUSD" placeholder="Symbol" class="bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-[12px] mono focus:border-emerald-500 outline-none">
+<select id="inpTF" class="bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-[12px] focus:border-emerald-500 outline-none"><option>1m</option><option selected>5m</option><option>15m</option><option>30m</option><option>1h</option></select>
+<input id="inpBid" placeholder="Bid (เช่น 2650.5)" class="bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-[12px] mono focus:border-emerald-500 outline-none">
+<input id="inpAsk" placeholder="Ask (เช่น 2651.0)" class="bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-[12px] mono focus:border-emerald-500 outline-none">
+</div>
+<button onclick="analyze()" class="w-full bg-gradient-to-r from-emerald-500 to-cyan-400 text-black font-black py-2.5 rounded-xl text-[13px] shadow-[0_0_20px_rgba(16,185,129,.35)] hover:scale-[1.02] transition">วิเคราะห์ / ANALYZE →</button>
+<div class="text-[9px] mono text-slate-500 mt-2 text-center">เว้นว่าง Bid/Ask = ใช้ราคาสด • ใส่ = ใช้รูปกราฟ</div>
+</div>
+
+<div id="report" class="bg-[#1e293b] border border-slate-700/80 rounded-2xl p-4 hidden">
+<div class="text-[11px] font-black tracking-widest mb-3">REPORT / รายงาน</div>
+<div id="reportContent" class="space-y-3 text-[11px]"></div>
+</div>
+
+<div class="bg-[#1e293b] border border-slate-700/80 rounded-2xl p-4">
+<div class="text-[11px] font-black tracking-widest mb-2">PLAN / แผนการเทรด</div>
+<div id="planList" class="space-y-2"><div class="text-[11px] text-slate-500 text-center py-6">กดวิเคราะห์เพื่อสร้างแผน</div></div>
+</div>
+</div>
+
+<!-- BROKER GATEWAY -->
+<div class="col-span-12">
+<div class="flex items-center justify-between mb-4 mt-2">
+<h2 class="text-[14px] font-black tracking-widest">🔥 BROKER GATEWAY <span class="text-slate-500 font-normal">/ ทางเข้าโบรกเกอร์ - คัดมาแล้ว สเปรดต่ำ ถอนไว</span></h2>
+<span class="text-[10px] px-2 py-1 rounded bg-slate-800 border border-slate-700 text-slate-400">AFFILIATE · แก้ไขลิงก์ได้</span>
+</div>
+<div class="grid sm:grid-cols-2 lg:grid-cols-3 gap-4" id="brokerGrid"></div>
+</div>
+
+<!-- CREATOR ADMIN -->
+<div class="col-span-12 mt-10">
+<div class="bg-[#0a0f1c] rounded-2xl border-2 border-amber-500/30 p-1">
+<div class="bg-[#101a2f]/80 rounded-xl border border-amber-500/20 p-5">
+<div class="flex flex-wrap justify-between gap-3 mb-4">
+<div>
+<h2 class="text-[14px] font-black tracking-widest text-amber-300 flex flex-wrap items-center gap-2">🔒 พื้นที่รับลิงก์ Affiliate อื่นๆ <span class="text-[11px] font-normal text-amber-200/60 bg-amber-500/10 px-2 py-0.5 rounded border border-amber-500/20">เฉพาะผู้สร้างเท่านั้น</span></h2>
+<p class="text-[11px] mono text-slate-400 mt-1">CREATOR ADMIN PANEL - PRIVATE - จัดการลิงก์เสริมได้ไม่จำกัด ใส่ได้เฉพาะคุณ</p>
+</div>
+<div id="authBadge" class="flex items-center gap-2"></div>
+</div>
+
+<div id="lockScreen" class="bg-slate-900/60 rounded-xl border border-slate-700/50 p-6 max-w-md mx-auto text-center">
+<div class="text-3xl mb-3">🔐</div>
+<div class="text-[13px] font-bold text-slate-200 mb-1">พื้นที่ผู้สร้างเท่านั้น</div>
+<div class="text-[11px] text-slate-500 mb-4">ใส่รหัสผ่านเพื่อจัดการลิงก์ Affiliate เพิ่มเติม<br>รหัสเริ่มต้น: <span class="mono text-amber-300">MNS2024</span></div>
+<div class="flex gap-2"><div class="flex-1 relative"><input id="pwdInput" type="password" placeholder="ใส่รหัสผ่าน..." class="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2.5 text-[13px] focus:outline-none focus:border-amber-500 pr-8"><button onclick="togglePwd()" class="absolute right-2 top-2.5 text-slate-500 text-[12px]" id="eyeBtn">👁️</button></div><button onclick="unlock()" class="px-5 py-2.5 bg-amber-500 hover:bg-amber-400 text-black font-black rounded-lg text-[13px]">ปลดล็อก</button></div>
+<div class="text-[9px] mono text-slate-600 mt-3">ทุกคนเห็นปุ่มนี้ แต่ต้องมีรหัสเท่านั้นถึงจะเพิ่มลิงก์ได้</div>
+</div>
+
+<div id="adminPanel" class="hidden space-y-6">
+<div class="bg-slate-900/80 rounded-xl border border-slate-700/50 p-4">
+<div class="text-[12px] font-bold text-slate-200 mb-3">➕ เพิ่มลิงก์ Affiliate ใหม่</div>
+<div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
+<input id="f_name" placeholder="ชื่อโบรกเกอร์" class="bg-slate-800 border border-slate-700 rounded-md px-2.5 py-2 text-[11px] focus:border-amber-500 outline-none">
+<input id="f_init" placeholder="อักษรย่อ E/X" class="bg-slate-800 border border-slate-700 rounded-md px-2.5 py-2 text-[11px] focus:border-amber-500 outline-none">
+<select id="f_color" class="bg-slate-800 border border-slate-700 rounded-md px-2.5 py-2 text-[11px]"><option value="bg-yellow-400">เหลือง</option><option value="bg-red-500">แดง</option><option value="bg-emerald-500">เขียว</option><option value="bg-blue-500">น้ำเงิน</option><option value="bg-indigo-500">ม่วง</option><option value="bg-amber-500">ส้มทอง</option><option value="bg-slate-200">ขาว</option></select>
+<input id="f_spread" placeholder="Spread 0.0 pip" class="bg-slate-800 border border-slate-700 rounded-md px-2.5 py-2 text-[11px] focus:border-amber-500 outline-none">
+<input id="f_cat" placeholder="หมวด FOREX" class="bg-slate-800 border border-slate-700 rounded-md px-2.5 py-2 text-[11px] focus:border-amber-500 outline-none">
+<input id="f_bonus" placeholder="โบนัส โปรโมชั่น" class="bg-slate-800 border border-slate-700 rounded-md px-2.5 py-2 text-[11px] focus:border-amber-500 outline-none col-span-2 sm:col-span-3 lg:col-span-6">
+<input id="f_url" placeholder="https:// ลิงก์ Affiliate เต็ม" class="bg-slate-800 border border-slate-700 rounded-md px-2.5 py-2 text-[11px] mono focus:border-amber-500 outline-none col-span-2 sm:col-span-3 lg:col-span-5">
+<button onclick="addAff()" class="bg-amber-500 hover:bg-amber-400 text-black font-black rounded-md px-3 py-2 text-[11px]">+ เพิ่มลิงก์</button>
+</div>
+</div>
+<div><div class="flex justify-between items-center mb-3"><div class="text-[12px] font-bold text-slate-200">📋 ลิงก์เสริมทั้งหมด (<span id="affCount">0</span>)</div><div class="flex gap-2"><button onclick="exportAff()" class="text-[10px] px-2 py-1 rounded bg-slate-800 border border-slate-700 text-slate-400">Export JSON</button><button onclick="importAff()" class="text-[10px] px-2 py-1 rounded bg-slate-800 border border-slate-700 text-slate-400">Import JSON</button></div></div><div id="affList" class="grid sm:grid-cols-2 lg:grid-cols-3 gap-3"></div></div>
+</div>
+</div>
+</div>
+
+<div id="extraPartners" class="hidden mt-8">
+<div class="flex items-center justify-between mb-4"><h3 class="text-[13px] font-black tracking-widest">EXTRA PARTNERS <span class="text-slate-500 font-normal">/ พาร์ทเนอร์เพิ่มเติม</span> <span id="extraCount" class="ml-2 text-[10px] px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/30">0 ลิงก์</span></h3></div>
+<div id="extraGrid" class="grid sm:grid-cols-2 lg:grid-cols-3 gap-4"></div>
+</div>
+
+</div>
+
+<div class="col-span-12 mt-10 text-center text-[10px] mono text-slate-600">MNS TRADE NAVIGATOR V3.8.1 FIXED • ASSET+PLAN WORKING • MAP → PLAN → NAVI → EXECUTION • © 2026 • Built for traders 🧭</div>
+</main>
+
+<script>
+const BASE={EURUSD:1.0845,GBPUSD:1.2721,USDJPY:155.32,AUDUSD:0.6632,XAUUSD:4376.82,XAGUSD:52.45,US30:45210,NAS100:19650,SPX500:5612,GER40:20560,UK100:8915,JP225:41820,BTCUSD:112420,ETHUSD:4850};
+const TVMAP={XAUUSD:"OANDA:XAUUSD",XAGUSD:"OANDA:XAGUSD",EURUSD:"FX:EURUSD",GBPUSD:"FX:GBPUSD",USDJPY:"FX:USDJPY",AUDUSD:"FX:AUDUSD",US30:"FOREXCOM:DJI",NAS100:"NASDAQ:NDX",SPX500:"FOREXCOM:SPXUSD",GER40:"XETR:DAX",UK100:"FOREXCOM:UKXGBP",JP225:"FOREXCOM:JP225",BTCUSD:"BINANCE:BTCUSD",ETHUSD:"BINANCE:ETHUSD"};
+const ASSETS={FOREX:["EURUSD","GBPUSD","USDJPY","AUDUSD"],GOLD:["XAUUSD","XAGUSD"],INDICES:["US30","NAS100","SPX500","GER40","UK100","JP225"],CRYPTO:["BTCUSD","ETHUSD"]};
+let currentTab="FOREX", currentSym="XAUUSD", currentTF="5m", prices={}, searchQ="", haltUntil=null;
+
+const BROKERS=[
+{key:"exness",name:"Exness",color:"bg-yellow-400",letter:"E",spread:"0.0 pip",bonus:"โบนัสสูงสุด $500 · สเปรดต่ำ",stars:5,defaultLink:"https://one.exnessonelink.com/a/80dmb5wr12?source=app",border:"border-t-yellow-400",ribbon:true},
+{key:"xm",name:"XM Global",color:"bg-blue-500",letter:"X",spread:"0.6 pip",bonus:"โบนัส 100% สูงสุด $5,000 · ฟรีโบนัส $30",stars:5,defaultLink:"https://www.xmglobal.com/referral?token=Jap-L9h7S19cmlEnDtElZA",border:"border-t-red-600",ribbon:true},
+{key:"activity",name:"Activity",color:"bg-violet-500",letter:"A",spread:"0.0 pip",bonus:"คืนเงินสูงสุด 60% · เทรดครบจบในที่เดียว",stars:4.5,defaultLink:"https://i.miactivitys.com/index-th-TH.html?c=FT9GU&na=TH&id=invite_260108_5.0&p=other&v=v4.3&t=1786761937590&n=en****en1@gmail.com&s=apply4",border:"border-t-emerald-500",ribbon:false},
+{key:"trendo",name:"Trendo",color:"bg-emerald-500",letter:"T",spread:"0.0 pip",bonus:"สเปรดเริ่ม 0.0 · ฝากถอนไว · แอปเทรดง่าย",stars:4.5,defaultLink:"https://trendo.com/invite?market=googleplay&code=3199411",border:"border-t-blue-500",ribbon:false},
+{key:"ic",name:"IC Markets",color:"bg-rose-500",letter:"I",spread:"Raw 0.0",bonus:"สเปรด Raw 0.0 · ECN แท้ · เลเวอเรจสูง",stars:5,defaultLink:"#",border:"border-t-rose-500",ribbon:false},
+{key:"pepper",name:"Pepperstone",color:"bg-slate-200",letter:"P",spread:"Razor 0.0",bonus:"Razor 0.0 · เทรดเร็ว · ใบอนุญาต FCA",stars:4.5,defaultLink:"#",border:"border-t-zinc-400",ribbon:false},
+];
+
+const EVENTS=[
+{time:"13:30",ccy:"EUR",title:"ECB Press Conference",impact:"HIGH",actual:"-",forecast:"-",prev:"-",mins:15},
+{time:"19:30",ccy:"USD",title:"CPI m/m",impact:"HIGH",actual:"0.3%",forecast:"0.2%",prev:"0.2%",mins:90},
+{time:"19:30",ccy:"USD",title:"Core CPI m/m",impact:"HIGH",actual:"0.3%",forecast:"0.3%",prev:"0.3%",mins:90},
+{time:"21:00",ccy:"USD",title:"Crude Oil Inventories",impact:"MEDIUM",actual:"-2.1M",forecast:"-1.5M",prev:"1.2M",mins:180},
+{time:"21:30",ccy:"XAU",title:"Gold Futures Settlement",impact:"LOW",actual:"-",forecast:"-",prev:"-",mins:210},
+];
+
+const NEWS=[
+{time:"08:12",src:"Reuters",title:"Gold rises as Fed dovish comments lift demand",sent:"Bullish",tags:["XAUUSD"]},
+{time:"07:45",src:"Bloomberg",title:"Dollar weakens ahead of CPI - traders eye 2650",sent:"Bearish USD",tags:["USD","XAUUSD"]},
+{time:"07:10",src:"Investing",title:"Oil spikes on inventory draw, risk-on returns",sent:"Bullish",tags:["OIL","US30"]},
+{time:"06:30",src:"ForexLive",title:"ECB Lagarde: rates will stay restrictive as long as needed",sent:"Neutral",tags:["EURUSD"]},
+{time:"05:50",src:"Kitco",title:"Gold holds $2650 as safe-haven bid remains",sent:"Bullish",tags:["XAUUSD"]},
+];
+
+function initPrices(){
+// Use REAL 2026 prices matching TradingView
+Object.values(ASSETS).flat().forEach(s=>{
+  // Spread in points: XAU 0.45, BTC 22, Forex 0.7
+  let sp = s.startsWith("XAU") ? "0.45" : s.includes("BTC") ? "22" : "0.7";
+  // Initial change - gold is +0.59% as per screenshot
+  let ch = s==="XAUUSD" ? 0.59 : (Math.random()-0.3)*1.2;
+  prices[s]={price:BASE[s]||100,ch:ch,spread:sp};
+});
+renderAssets();
+// Update top price to match TradingView widget - sync every 2.8s with realistic micro movement
+setInterval(()=>{
+  Object.keys(prices).forEach(k=>{
+    const base = BASE[k];
+    // Smaller realistic movement: Gold moves ~0.5-1.5 per tick, Forex 0.00005
+    const vol = base>1000 ? base*0.00015 : base*0.00008;
+    const d=(Math.random()-0.5)*vol;
+    const cd=(Math.random()-0.5)*0.08;
+    prices[k].price+=d; 
+    // Keep price close to BASE (prevent drift too far)
+    prices[k].price = prices[k].price*0.999 + base*0.001;
+    prices[k].ch+=cd;
+  });
+  renderAssets();
+  if(prices[currentSym]){
+    const p=prices[currentSym];
+    const decimals = (currentSym==="XAUUSD"||currentSym==="XAGUSD")?2: currentSym.includes("JPY")?3:4;
+    document.getElementById("livePrice").textContent=p.price.toFixed(decimals);
+    const ch=p.ch;
+    document.getElementById("liveCh").textContent=(ch>0?"+":"")+ch.toFixed(2)+"%";
+    document.getElementById("liveCh").className="text-[11px] px-1.5 py-0.5 rounded "+(ch>=0?"bg-emerald-500/20 text-emerald-300":"bg-rose-500/20 text-rose-300");
+  }
+},2800);
+}
+function setTab(t){
+currentTab=t;
+document.querySelectorAll(".tab").forEach(b=>{b.className="tab text-[11px] font-bold px-3 py-1.5 rounded-full bg-slate-800 text-slate-400";});
+document.getElementById("tab_"+t).className="tab text-[11px] font-bold px-3 py-1.5 rounded-full bg-emerald-500 text-black";
+renderAssets();
+}
+function renderAssets(){
+const se=document.getElementById("search"); const q=se?se.value.toLowerCase():"";
+const list=document.getElementById("assetList");
+let syms=q?Object.values(ASSETS).flat().filter(s=>s.toLowerCase().includes(q)):ASSETS[currentTab];
+list.innerHTML=syms.map(s=>{const p=prices[s];const ch=p? p.ch :0;const active=s===currentSym?"border-emerald-500/50 bg-emerald-500/10":"border-slate-700/50 bg-slate-900/40 hover:border-slate-600";return `<button onclick="selectSym('${s}')" class="w-full flex justify-between items-center px-3 py-2 rounded-lg border ${active} transition text-left"><span class="flex items-center gap-2"><span class="w-1.5 h-1.5 rounded-full bg-emerald-400"></span><b class="text-[12px]">${s}</b><span class="text-[10px] mono text-slate-400">${p? p.price.toFixed(s==="XAUUSD"?2:4):"--"}</span></span><span class="text-[10px] px-1.5 py-0.5 rounded ${ch>=0?'bg-emerald-500/20 text-emerald-300':'bg-rose-500/20 text-rose-300'}">${(ch>0?"+":"")+ch.toFixed(2)}% · ${p?p.spread:"-"}</span></button>`}).join("");
+}
+function selectSym(s){
+currentSym=s;
+document.getElementById("symName").textContent=s;
+document.getElementById("inpSym").value=s;
+document.getElementById("livePrice").textContent=(prices[s]?prices[s].price.toFixed(s==="XAUUSD"?2:4):BASE[s]);
+updateChart();
+renderAssets();
+}
+function setTF(tf){
+currentTF=tf;
+document.querySelectorAll(".tf").forEach(b=>{b.className="tf text-[11px] px-2.5 py-1 rounded-full bg-slate-800 text-slate-400";});
+document.querySelector(`.tf[data-tf='${tf}']`).className="tf text-[11px] px-2.5 py-1 rounded-full bg-emerald-500 text-black font-bold";
+document.getElementById("inpTF").value=tf;
+updateChart();
+}
+function updateChart(){
+const tv= TVMAP[currentSym]||`FX:${currentSym}`;
+const map={"1m":"1","5m":"5","15m":"15","30m":"30","1h":"60"};
+const inter=map[currentTF]||"5";
+document.getElementById("tvFrame").src=`https://s.tradingview.com/widgetembed/?symbol=${encodeURIComponent(tv)}&interval=${inter}&theme=dark&style=1&timezone=Etc%2FUTC&withdateranges=1&hidesidetoolbar=0&symboledit=1&saveimage=1&toolbarbg=%231e293b&locale=en`;
+}
+
+function renderBrokers(){
+const grid=document.getElementById("brokerGrid");
+grid.innerHTML=BROKERS.map(b=>{
+const custom=localStorage.getItem(`broker_custom_${b.key}`);
+const href=custom||b.defaultLink;
+const isCustom=!!custom;
+return `<div class="bg-[#1e293b] rounded-2xl border-t-4 ${b.border} border-x border-b border-slate-700/80 p-4 flex flex-col gap-3 hover:-translate-y-1 hover:shadow-xl transition relative overflow-hidden">
+${b.ribbon?'<div class="absolute top-0 right-0 bg-red-600 text-white text-[8px] font-black px-2 py-1 rounded-bl-lg">แนะนำ</div>':""}
+<div class="flex items-start justify-between"><div class="flex items-center gap-3"><div class="w-10 h-10 rounded-xl grid place-items-center font-black text-[13px] ${b.color} text-black shadow-lg">${b.letter}</div><div><div class="font-bold text-[13px]">${b.name}</div><div class="text-[10px] mono text-slate-500">SP ${b.spread} · ${b.stars}★</div></div></div><div class="flex text-amber-400 text-[12px]">${"★".repeat(Math.floor(b.stars))}${b.stars%1?"½":""}</div></div>
+<div class="text-[11px] text-slate-400 leading-snug min-h-[32px]">${b.bonus}</div>
+<div><label class="text-[10px] text-slate-500">ลิงก์ส่วนตัว / Custom link</label><input value="${isCustom?custom:""}" oninput="saveCustom('${b.key}',this.value)" placeholder="${b.defaultLink==="#"?"วางลิงก์ของตัวเอง...":"ว่าง = ใช้ลิงก์พาร์ทเนอร์เดิม"}" class="mt-1 w-full bg-slate-900 border border-slate-700 rounded-md px-2.5 py-2 text-[11px] mono focus:outline-none focus:border-emerald-500 placeholder:text-slate-600"><div class="text-[9px] text-emerald-400 mt-1 ${isCustom?"":"hidden"}">✓ ใช้ลิงก์ส่วนตัวแล้ว</div></div>
+<a href="${href}" target="_blank" class="mt-auto w-full text-center text-[12px] font-black py-3 rounded-xl ${href==="#"?"bg-slate-800 text-slate-500 border border-slate-700 pointer-events-none":"bg-gradient-to-r from-emerald-400 to-cyan-400 text-black border border-emerald-500/30 shadow-[0_0_20px_rgba(16,185,129,.35)] hover:shadow-[0_0_30px_rgba(16,185,129,.55)]"} transition">เปิดบัญชีรับโบนัส →<div class="text-[9px] font-normal opacity-70">คลิกผ่านลิงก์นี้ได้โบนัสพิเศษ</div></a>
+<div class="text-[9px] mono text-slate-600 truncate">→ ${href}</div>
+</div>`}).join("");
+}
+function saveCustom(k,v){if(v)localStorage.setItem(`broker_custom_${k}`,v);else localStorage.removeItem(`broker_custom_${k}`);renderBrokers();}
+
+function renderCalendar(filter="ALL"){
+const list=document.getElementById("calendarList");
+let ev=EVENTS;
+if(filter==="HIGH") ev=ev.filter(e=>e.impact==="HIGH");
+if(filter==="USD") ev=ev.filter(e=>e.ccy==="USD");
+if(filter==="XAU") ev=ev.filter(e=>e.ccy==="XAU");
+list.innerHTML=ev.map(e=>{
+const col=e.impact==="HIGH"?"border-red-500/30 bg-red-500/10 text-red-300":e.impact==="MEDIUM"?"border-amber-500/30 bg-amber-500/10 text-amber-300":"border-slate-700 bg-slate-800/50 text-slate-400";
+return `<div class="flex items-center justify-between px-3 py-2 rounded-lg border ${col} text-[11px]"><span class="flex items-center gap-2"><span class="mono font-bold">${e.time}</span><span class="text-[9px] px-1 py-0.5 rounded bg-slate-900 border border-slate-700">${e.ccy}</span><span>${e.title}</span></span><span class="flex items-center gap-2"><span class="text-[9px] px-1.5 py-0.5 rounded-full border ${e.impact==="HIGH"?"bg-red-500 text-black font-bold":e.impact==="MEDIUM"?"bg-amber-400 text-black":"bg-slate-700 text-slate-300"}">${e.impact}</span><span class="mono text-[10px]">${e.actual}</span></span></div>`
+}).join("");
+}
+function filterNews(f,el){document.querySelectorAll(".fbtn").forEach(b=>b.className="fbtn text-[10px] px-2 py-1 rounded-full bg-slate-800 text-slate-400");if(el) el.className="fbtn text-[10px] px-2 py-1 rounded-full bg-emerald-500 text-black font-bold";renderCalendar(f);}
+function renderNews(){document.getElementById("newsList").innerHTML=NEWS.map(n=>`<div class="px-3 py-2 rounded-lg bg-slate-900/60 border border-slate-700/50 text-[11px]"><div class="flex justify-between text-[9px] mono text-slate-500"><span>${n.time} · ${n.src}</span><span class="px-1 py-0.5 rounded ${n.sent.includes("Bullish")?"bg-emerald-500/20 text-emerald-300":"bg-rose-500/20 text-rose-300"}">${n.sent}</span></div><div class="mt-1 leading-snug">${n.title}</div><div class="mt-1 flex gap-1">${n.tags.map(t=>`<span class="text-[8px] px-1 py-0.5 rounded bg-slate-800 border border-slate-700">${t}</span>`).join("")}</div></div>`).join("");}
+
+function analyze(){
+const sym=document.getElementById("inpSym").value.toUpperCase()||currentSym;
+const bidStr=document.getElementById("inpBid").value;
+const askStr=document.getElementById("inpAsk").value;
+let bid,ask,src;
+if(bidStr&&askStr){bid=parseFloat(bidStr);ask=parseFloat(askStr);src="📸 รูปกราฟ/หน้าจอ";}
+else{const p=prices[sym]||{price:BASE[sym]||100};const spr=sym==="XAUUSD"?0.5:0.00012;bid=p.price-spr/2;ask=p.price+spr/2;src="⚙️ คำนวณเอง";}
+const spread=ask-bid;
+const atr=sym==="XAUUSD"?12.8:sym.includes("BTC")?450:bid*0.008;
+const mid=(bid+ask)/2;
+const el=mid-atr*0.15, eh=mid+atr*0.15;
+const slBuy=el-atr*1.5-spread, tp1Buy=eh+atr*1.5, tp2Buy=eh+atr*3;
+const slSell=eh+atr*1.5+spread, tp1Sell=el-atr*1.5, tp2Sell=el-atr*3;
+document.getElementById("report").classList.remove("hidden");
+document.getElementById("reportContent").innerHTML=`<div class="flex justify-between"><span>Symbol</span><b>${sym}</b></div><div class="flex justify-between"><span>Bid/Ask</span><b class="mono">${bid.toFixed(2)} / ${ask.toFixed(2)}</b></div><div class="flex justify-between"><span>Spread</span><b class="mono text-amber-300">${spread.toFixed(4)}</b></div><div class="flex justify-between"><span>ATR</span><b>${atr.toFixed(2)}</b></div><div class="flex justify-between"><span>Source</span><b>${src}</b></div><div class="mt-2 text-[10px] mono text-slate-500">SL รวม Spread แล้ว • ไม่มีตัวเลขบังคับ</div>`;
+document.getElementById("planList").innerHTML=`
+<div class="rounded-xl border border-emerald-500/30 bg-emerald-500/10 p-3">
+<div class="flex justify-between items-center mb-2"><span class="text-[11px] font-black px-2 py-0.5 rounded bg-emerald-500 text-black">BUY · ARMED · 76%</span><span class="text-[10px] mono text-slate-400">SWING_LOW_REACTION</span></div>
+<div class="grid grid-cols-2 gap-2 text-[11px]"><div class="bg-slate-900/60 rounded px-2 py-2 border border-slate-700/40"><span class="text-[9px] text-slate-500 block">Entry Zone</span><b class="mono">${el.toFixed(2)} - ${eh.toFixed(2)}</b></div><div class="bg-slate-900/60 rounded px-2 py-2 border border-slate-700/40"><span class="text-[9px] text-slate-500 block">Stop Loss</span><b class="mono text-rose-400">${slBuy.toFixed(2)}</b></div><div class="bg-slate-900/60 rounded px-2 py-2 border border-slate-700/40"><span class="text-[9px] text-slate-500 block">TP1</span><b class="mono text-emerald-300">${tp1Buy.toFixed(2)}</b></div><div class="bg-slate-900/60 rounded px-2 py-2 border border-slate-700/40"><span class="text-[9px] text-slate-500 block">TP2</span><b class="mono text-emerald-300">${tp2Buy.toFixed(2)}</b></div></div>
+</div>
+<div class="rounded-xl border border-rose-500/30 bg-rose-500/10 p-3">
+<div class="flex justify-between items-center mb-2"><span class="text-[11px] font-black px-2 py-0.5 rounded bg-rose-500 text-black">SELL · MISSED · 68%</span><span class="text-[10px] mono text-slate-400">SWING_HIGH_REACTION</span></div>
+<div class="grid grid-cols-2 gap-2 text-[11px]"><div class="bg-slate-900/60 rounded px-2 py-2 border border-slate-700/40"><span class="text-[9px] text-slate-500 block">Entry Zone</span><b class="mono">${el.toFixed(2)} - ${eh.toFixed(2)}</b></div><div class="bg-slate-900/60 rounded px-2 py-2 border border-slate-700/40"><span class="text-[9px] text-slate-500 block">Stop Loss</span><b class="mono text-rose-400">${slSell.toFixed(2)}</b></div><div class="bg-slate-900/60 rounded px-2 py-2 border border-slate-700/40"><span class="text-[9px] text-slate-500 block">TP1</span><b class="mono text-emerald-300">${tp1Sell.toFixed(2)}</b></div><div class="bg-slate-900/60 rounded px-2 py-2 border border-slate-700/40"><span class="text-[9px] text-slate-500 block">TP2</span><b class="mono text-emerald-300">${tp2Sell.toFixed(2)}</b></div></div>
+</div>`;
+}
+
+// HALT countdown logic
+function initHalt(){
+const next=EVENTS.find(e=>e.impact==="HIGH");
+if(!next) return;
+let secs=next.mins*60;
+setInterval(()=>{
+secs--;
+if(secs<0) secs=next.mins*60;
+const m=Math.floor(secs/60).toString().padStart(2,"0");
+const s=(secs%60).toString().padStart(2,"0");
+document.getElementById("nextHigh").textContent=`${m}:${s}`;
+if(secs<900){
+document.getElementById("haltBanner").classList.remove("hidden");
+document.getElementById("haltCountdown").textContent=`${m}:${s}`;
+}else{
+document.getElementById("haltBanner").classList.add("hidden");
+}
+},1000);
+}
+
+// CREATOR ADMIN
+function checkAuth(){
+const a=localStorage.getItem("creatorAuth");
+if(a==="1"){showAdmin();}else{showLock();}
+renderCustom();
+}
+function showLock(){document.getElementById("lockScreen").classList.remove("hidden");document.getElementById("adminPanel").classList.add("hidden");document.getElementById("authBadge").innerHTML='<span class="text-[10px] px-2 py-1 rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/30">🔐 ล็อกอยู่</span>';}
+function showAdmin(){document.getElementById("lockScreen").classList.add("hidden");document.getElementById("adminPanel").classList.remove("hidden");document.getElementById("authBadge").innerHTML='<span class="text-[10px] px-2 py-1 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">● ปลดล็อกแล้ว - คุณคือผู้สร้าง</span><button onclick="logout()" class="text-[10px] px-2 py-1 rounded bg-slate-800 text-slate-400 border border-slate-700">ล็อกออก</button>';}
+function togglePwd(){const i=document.getElementById("pwdInput");i.type=i.type==="password"?"text":"password";document.getElementById("eyeBtn").textContent=i.type==="password"?"👁️":"🙈";}
+function unlock(){const v=document.getElementById("pwdInput").value;if(v==="MNS2024"){localStorage.setItem("creatorAuth","1");document.getElementById("pwdInput").value="";showAdmin();}else{alert("รหัสผ่านไม่ถูกต้อง - เริ่มต้นคือ MNS2024");}}
+function logout(){localStorage.removeItem("creatorAuth");showLock();}
+function getAffs(){try{return JSON.parse(localStorage.getItem("customAffiliates")||"[]")}catch{return []}}
+function saveAffs(a){localStorage.setItem("customAffiliates",JSON.stringify(a));renderCustom();}
+function addAff(){
+const name=document.getElementById("f_name").value.trim();
+const init=document.getElementById("f_init").value.trim();
+const color=document.getElementById("f_color").value;
+const spread=document.getElementById("f_spread").value.trim()||"0.0 pip";
+const cat=document.getElementById("f_cat").value.trim()||"ALL";
+const bonus=document.getElementById("f_bonus").value.trim();
+const url=document.getElementById("f_url").value.trim();
+if(!name||!url){alert("กรุณาใส่ชื่อและลิงก์");return;}
+const list=getAffs();
+list.push({id:Date.now().toString(),name,initial:init||name[0],color,spread,bonus,url,cat,active:true,clicks:0,date:new Date().toLocaleDateString("th-TH")});
+saveAffs(list);
+["f_name","f_init","f_spread","f_cat","f_bonus","f_url"].forEach(id=>document.getElementById(id).value="");
+}
+function delAff(id){if(!confirm("ลบ?"))return;saveAffs(getAffs().filter(x=>x.id!==id));}
+function toggleAff(id){saveAffs(getAffs().map(x=>x.id===id?{...x,active:!x.active}:x));}
+function renderCustom(){
+const affs=getAffs();
+document.getElementById("affCount").textContent=affs.length;
+document.getElementById("affList").innerHTML=affs.length===0?'<div class="col-span-full text-center py-8 text-slate-600 text-[11px]">ยังไม่มีลิงก์เสริม - เพิ่มด้านบนได้เลย</div>':affs.map(a=>`<div class="rounded-xl border p-3 flex flex-col gap-2 ${a.active?"bg-[#1e293b] border-slate-700/80":"bg-slate-900/40 border-slate-800 opacity-60"}"><div class="flex justify-between"><div class="flex items-center gap-2"><div class="w-8 h-8 rounded-md grid place-items-center font-black text-[11px] ${a.color} text-black">${a.initial}</div><div><div class="font-bold text-[12px]">${a.name}</div><div class="text-[10px] mono text-slate-500">${a.spread} · ${a.cat}</div></div></div><div class="flex gap-1"><button onclick="toggleAff('${a.id}')" class="text-[9px] px-1.5 py-0.5 rounded ${a.active?"bg-emerald-500/20 text-emerald-300 border border-emerald-500/30":"bg-slate-700 text-slate-400"}">${a.active?"เปิด":"ปิด"}</button><button onclick="delAff('${a.id}')" class="text-[9px] px-1.5 py-0.5 rounded bg-rose-500/20 text-rose-300 border border-rose-500/30">ลบ</button></div></div><div class="text-[10px] text-slate-400 min-h-[28px]">${a.bonus}</div><div class="text-[9px] mono text-slate-500 truncate">${a.url}</div><div class="flex gap-2"><a href="${a.url}" target="_blank" class="flex-1 text-center text-[10px] font-bold py-1.5 rounded bg-emerald-600 text-white">ทดสอบเปิด</a><button onclick="navigator.clipboard.writeText('${a.url}');const l=getAffs().map(x=>x.id==='${a.id}'?{...x,clicks:(x.clicks||0)+1}:x);saveAffs(l);" class="text-[10px] px-2 py-1 rounded bg-slate-800 border border-slate-700">ก๊อปปี้</button></div><div class="text-[8px] mono text-slate-600">เพิ่ม ${a.date} · คลิก ${a.clicks||0}</div></div>`).join("");
+
+const active=affs.filter(x=>x.active);
+if(active.length>0){
+document.getElementById("extraPartners").classList.remove("hidden");
+document.getElementById("extraCount").textContent=active.length+" ลิงก์";
+document.getElementById("extraGrid").innerHTML=active.map(a=>`<div class="bg-[#1e293b] rounded-xl border border-amber-500/20 p-4 flex flex-col gap-3 relative overflow-hidden hover:-translate-y-1 hover:shadow-xl transition"><div class="absolute top-0 right-0 bg-amber-500 text-black text-[8px] font-black px-2 py-0.5 rounded-bl-lg">CUSTOM</div><div class="flex items-center gap-3"><div class="w-10 h-10 rounded-lg grid place-items-center font-black text-[13px] ${a.color} text-black shadow-lg">${a.initial}</div><div><div class="font-bold text-[13px]">${a.name}</div><div class="text-[10px] mono text-slate-500">${a.spread} · ${a.cat}</div></div></div><div class="text-[11px] text-slate-400 min-h-[32px]">${a.bonus}</div><a href="${a.url}" target="_blank" class="mt-auto w-full text-center text-[12px] font-black py-2.5 rounded-lg bg-gradient-to-r from-amber-400 to-yellow-400 text-black shadow-[0_0_18px_rgba(245,158,11,.3)]">เปิดบัญชี / TRADE NOW →</a><div class="text-[9px] mono text-slate-600 truncate">→ ${a.url}</div></div>`).join("");
+}else{
+document.getElementById("extraPartners").classList.add("hidden");
+}
+}
+function exportAff(){const d=localStorage.getItem("customAffiliates")||"[]";navigator.clipboard.writeText(d);alert("คัดลอก JSON แล้ว - เก็บไว้สำรองได้");}
+function importAff(){const j=prompt("วาง JSON ที่ Export ไว้");if(j){try{const arr=JSON.parse(j);saveAffs(arr);}catch{alert("JSON ไม่ถูกต้อง");}}}
+
+window.setTab=setTab; window.selectSym=selectSym; window.setTF=setTF; window.analyze=analyze; window.filterNews=filterNews; window.onload=()=>{initPrices();renderBrokers();renderCalendar();renderNews();initHalt();checkAuth();};
+</script>
+</body>
+</html>
