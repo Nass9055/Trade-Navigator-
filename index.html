@@ -1,0 +1,366 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>MNS — Trade Navigator Pro</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800;900&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+<script src="https://cdn.tailwindcss.com"></script>
+<script type="text/javascript" src="https://s3.tradingview.com/tv.js"></script>
+<style>
+body{font-family:Inter,system-ui;background:#020617;color:#e2e8f0}
+.mono{font-family:JetBrains Mono,monospace}
+.glow-yellow{box-shadow:0 0 18px rgba(250,204,21,.45)}
+.glow-red{box-shadow:0 0 18px rgba(239,68,68,.45)}
+.glow-emerald{box-shadow:0 0 18px rgba(16,185,129,.45)}
+.glow-indigo{box-shadow:0 0 18px rgba(99,102,241,.45)}
+.pulse{animation:pulse 2s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.85;transform:scale(1.02)}}
+@keyframes planFresh{0%,100%{border-color:rgba(16,185,129,.5)}}
+@keyframes planWarn{0%,100%{border-color:rgba(245,158,11,.5)}}
+@keyframes planExpired{0%,100%{border-color:rgba(239,68,68,.5)}}
+.plan-fresh{animation:planFresh 3s infinite;border-color:rgba(16,185,129,.6)!important}
+.plan-warn{animation:planWarn 3s infinite;border-color:rgba(245,158,11,.6)!important}
+.plan-expired{animation:planExpired 3s infinite;border-color:rgba(239,68,68,.6)!important}
+</style>
+</head>
+<body class="min-h-screen bg-[radial-gradient(circle_at_1px_1px,rgba(16,185,129,0.07)_1px,transparent_0)] bg-[length:24px_24px]">
+
+<header class="sticky top-0 z-50 backdrop-blur-xl bg-slate-900/85 border-b border-slate-800">
+<div class="h-[2px] w-full bg-gradient-to-r from-emerald-400 via-yellow-400 to-indigo-500"></div>
+<div class="max-w-[1600px] mx-auto px-4 py-3 flex flex-wrap items-center gap-3">
+<div class="flex items-center gap-2.5">
+<span class="font-black text-[16px] tracking-widest text-emerald-400">MNS</span>
+<span class="text-[10px] font-black tracking-[0.2em] bg-black text-emerald-400 border border-emerald-500/30 px-2.5 py-1 rounded-full">TRADE NAVIGATOR</span>
+</div>
+<div class="flex flex-wrap gap-2.5">
+<a href="https://i.miactivitys.com/index-th-TH.html?c=FT9GU&na=TH&id=invite_260108_5.0&p=other&v=v4.3&t=1786812863392&n=en****en1@gmail.com&s=apply4" target="_blank" class="glow-emerald bg-emerald-500 text-white font-bold text-[13px] px-4 py-2 rounded-full hover:scale-105 transition">Mitrade 🏆 [FT9GU]</a>
+<a href="https://one.exnessonelink.com/a/80dmb5wr12?source=app" target="_blank" class="glow-yellow bg-yellow-400 text-black font-bold text-[13px] px-4 py-2 rounded-full hover:scale-105 transition">Exness ⭐</a>
+<a href="https://www.xmglobal.com/referral?token=Jap-L9h7S19cmlEnDtElZA" target="_blank" class="glow-red bg-red-600 text-white font-bold text-[13px] px-4 py-2 rounded-full hover:scale-105 transition">XM 🔥</a>
+<a href="https://trendo.com/invite?market=googleplay&code=3199411" target="_blank" class="glow-indigo bg-indigo-600 text-white font-bold text-[13px] px-4 py-2 rounded-full hover:scale-105 transition">Trendo 🚀</a>
+</div>
+</div>
+</header>
+
+<main class="max-w-[1600px] mx-auto px-4 py-5 grid grid-cols-12 gap-4">
+
+<!-- ซ้าย: รายการสินทรัพย์ + สถานะแผน + ปฏิทิน -->
+<div class="col-span-12 lg:col-span-3 space-y-4">
+<div class="bg-[#1e293b] border border-slate-700/80 rounded-2xl p-4">
+<div class="flex flex-wrap gap-1 mb-3">
+<button onclick="setTab('FOREX')" id="tab_FOREX" class="tab text-[10px] font-bold px-2 py-1 rounded-full bg-slate-800 text-slate-400">Forex</button>
+<button onclick="setTab('GOLD')" id="tab_GOLD" class="tab text-[10px] font-bold px-2 py-1 rounded-full bg-slate-800 text-slate-400">ทอง/น้ำมัน</button>
+<button onclick="setTab('CRYPTO')" id="tab_CRYPTO" class="tab text-[10px] font-bold px-2 py-1 rounded-full bg-slate-800 text-slate-400">คริปโต</button>
+<button onclick="setTab('INDEX')" id="tab_INDEX" class="tab text-[10px] font-bold px-2 py-1 rounded-full bg-slate-800 text-slate-400">ดัชนี</button>
+<button onclick="setTab('STOCK')" id="tab_STOCK" class="tab text-[10px] font-bold px-2 py-1 rounded-full bg-slate-800 text-slate-400">หุ้น</button>
+<button onclick="setTab('ETF')" id="tab_ETF" class="tab text-[10px] font-bold px-2 py-1 rounded-full bg-slate-800 text-slate-400">ETF</button>
+</div>
+<input id="search" placeholder="ค้นหาสัญลักษณ์..." oninput="renderAssets()" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-[12px] mono mb-3 outline-none focus:border-emerald-500">
+<div id="assetList" class="space-y-1.5 max-h-[220px] overflow-auto"></div>
+</div>
+
+<div class="bg-[#1e293b] border border-slate-700/80 rounded-2xl p-4">
+<div class="text-[11px] font-black tracking-widest text-slate-300 mb-3">⏱️ สถานะแผน (หมดอายุ 15 นาที)</div>
+<div class="space-y-2 text-[11px] mono">
+<div class="flex justify-between"><span class="text-slate-500">สร้างเมื่อ</span><b id="planTime" class="text-emerald-300">--:--:--</b></div>
+<div class="flex justify-between"><span class="text-slate-500">เวลาปัจจุบัน</span><b id="nowTime" class="text-slate-200">--:--:--</b></div>
+<div class="flex justify-between"><span class="text-slate-500">อายุแผน</span><b id="planAge" class="text-yellow-300">-- นาที</b></div>
+</div>
+<div class="mt-3 pt-3 border-t border-slate-700">
+<span id="freshBadge" class="text-[10px] px-2 py-1 rounded-full bg-slate-800 text-slate-400 border">รอวิเคราะห์</span>
+</div>
+</div>
+
+<div class="bg-[#1e293b] border border-slate-700/80 rounded-2xl p-4">
+<div class="text-[11px] font-black tracking-widest text-slate-300 mb-2">📰 ปฏิทินเศรษฐกิจ</div>
+<iframe src="https://s.tradingview.com/embed-widget/events/?locale=th_TH#%7B%22colorTheme%22%3A%22dark%22%2C%22isTransparent%22%3A%22true%22%7D" style="width:100%;height:160px;border:0" class="rounded-lg"></iframe>
+</div>
+</div>
+
+<!-- กลาง: กราฟ TradingView -->
+<div class="col-span-12 lg:col-span-6">
+<div class="bg-[#1e293b] border border-slate-700/80 rounded-2xl overflow-hidden">
+<div class="flex flex-wrap items-center justify-between p-4 border-b border-slate-800 gap-2">
+<div>
+  <div class="flex items-center gap-2">
+    <span id="symName" class="font-black text-[18px]">GOLD</span>
+    <span id="livePrice" class="mono text-[18px] text-emerald-300">--</span>
+  </div>
+  <div class="text-[10px] mono text-slate-500">LIVE SYNC & TV.js Engine</div>
+</div>
+<div class="flex gap-1">
+<button onclick="setTF('1')" class="tf text-[11px] px-2 py-1 rounded-full bg-slate-800 text-slate-400" data-tf="1">1m</button>
+<button onclick="setTF('5')" class="tf text-[11px] px-2 py-1 rounded-full bg-emerald-500 text-black font-bold" data-tf="5">5m</button>
+<button onclick="setTF('15')" class="tf text-[11px] px-2 py-1 rounded-full bg-slate-800 text-slate-400" data-tf="15">15m</button>
+<button onclick="setTF('30')" class="tf text-[11px] px-2 py-1 rounded-full bg-slate-800 text-slate-400" data-tf="30">30m</button>
+<button onclick="setTF('60')" class="tf text-[11px] px-2 py-1 rounded-full bg-slate-800 text-slate-400" data-tf="60">1h</button>
+</div>
+</div>
+<div id="tradingview_chart_container" style="height:480px;width:100%;background:#0f172a;display:flex;align-items:center;justify-content:center;color:#94a3b8;">
+  <span>⏳ กำลังโหลดกราฟ...</span>
+</div>
+</div>
+</div>
+
+<!-- ขวา: วิเคราะห์ + แผน -->
+<div class="col-span-12 lg:col-span-3 space-y-4">
+<div class="bg-[#1e293b] border border-slate-700/80 rounded-2xl p-4">
+<div class="text-[11px] font-black tracking-widest mb-3">วิเคราะห์แผน</div>
+<div class="grid grid-cols-2 gap-2 mb-3">
+<input id="inpSym" value="TVC:GOLD" class="col-span-2 bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-[12px] mono outline-none focus:border-emerald-500">
+<select id="inpTF" class="bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-[12px] outline-none focus:border-emerald-500">
+<option value="1">1m</option><option value="5" selected>5m</option><option value="15">15m</option><option value="30">30m</option><option value="60">1h</option>
+</select>
+<input id="inpBid" placeholder="Bid ราคา" class="bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-[12px] mono outline-none focus:border-emerald-500">
+<input id="inpAsk" placeholder="Ask ราคา" class="bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-[12px] mono outline-none focus:border-emerald-500">
+</div>
+<button onclick="analyze()" class="w-full bg-gradient-to-r from-emerald-500 to-cyan-400 text-black font-black py-2.5 rounded-xl shadow-[0_0_20px_rgba(16,185,129,.35)] hover:scale-[1.02] transition">วิเคราะห์ & สร้างแผน →</button>
+</div>
+
+<div id="report" class="bg-[#1e293b] border border-slate-700/80 rounded-2xl p-4 hidden">
+<div class="text-[11px] font-black tracking-widest mb-3">📋 รายงาน</div>
+<div id="reportContent" class="space-y-2 text-[11px]"></div>
+</div>
+
+<div class="bg-[#1e293b] border border-slate-700/80 rounded-2xl p-4">
+<div class="text-[11px] font-black tracking-widest mb-2">🧭 แผนเทรด</div>
+<div id="planList" class="space-y-2"><div class="text-[11px] text-slate-500 text-center py-6">กดปุ่มวิเคราะห์</div></div>
+</div>
+</div>
+
+<!-- 🔥 BROKER GATEWAY -->
+<div class="col-span-12 mt-4">
+<h2 class="text-[14px] font-black tracking-widest mb-3">🔥 ทางเข้าโบรกเกอร์</h2>
+<div class="grid sm:grid-cols-2 lg:grid-cols-4 gap-4" id="brokerGrid"></div>
+</div>
+
+</main>
+
+<script>
+const BASE = {
+  EURUSD:1.1567, GBPUSD:1.3526, USDJPY:159.31,
+  XAUUSD:4376.16, GOLD:4376.16, SILVER:64.708, USOIL:82.39,
+  BTCUSD:62964, BTCUSDT:62964, BTCTHB:2084566.57, ETHUSDT:1882.15,
+  SET:1609.06, SET50:1075.26, SPX:7785.75, NDX:30046.14, VIX:14.26,
+  AAPL:305.93, TSLA:342.27, NVDA:0, MSFT:0, GOOGL:0,
+  AOT:65.00, CPALL:47.00, PTT:39.75, DELTA:0, SCB:0
+};
+
+const TVMAP = {
+  EURUSD:"FX:EURUSD", GBPUSD:"FX:GBPUSD", USDJPY:"FX:USDJPY",
+  XAUUSD:"OANDA:XAUUSD", GOLD:"TVC:GOLD", SILVER:"TVC:SILVER", USOIL:"TVC:USOIL",
+  BTCUSD:"BITSTAMP:BTCUSD", BTCUSDT:"BINANCE:BTCUSDT", BTCTHB:"BINANCE:BTCTHB", ETHUSDT:"BINANCE:ETHUSDT",
+  SET:"SET:SET", SET50:"TFEX:S50", SPX:"SP:SPX", NDX:"NASDAQ:NDX", VIX:"CBOE:VIX",
+  S50:"TFEX:S50", MNQ:"CME:MNQ", NQ:"CME:NQ", ES:"CME:ES", YM:"CBOT:YM",
+  GC:"COMEX:GC", MGC:"COMEX:MGC", CL:"NYMEX:CL",
+  VOO:"NYSEARCA:VOO", QQQ:"NASDAQ:QQQ", QQQM:"NASDAQ:QQQM", SPY:"NYSEARCA:SPY", GLD:"NYSEARCA:GLD",
+  AAPL:"NASDAQ:AAPL", TSLA:"NASDAQ:TSLA", NVDA:"NASDAQ:NVDA", MSFT:"NASDAQ:MSFT", GOOGL:"NASDAQ:GOOGL",
+  AOT:"SET:AOT", CPALL:"SET:CPALL", PTT:"SET:PTT", DELTA:"SET:DELTA", SCB:"SET:SCB"
+};
+
+const ASSETS = {
+  FOREX: ["EURUSD","GBPUSD","USDJPY"],
+  GOLD: ["GOLD","XAUUSD","SILVER","USOIL","GC","MGC","CL"],
+  CRYPTO: ["BTCUSD","BTCUSDT","BTCTHB","ETHUSDT"],
+  INDEX: ["SET","SET50","S50","SPX","NDX","VIX","ES","MNQ","NQ","YM"],
+  STOCK: ["AAPL","TSLA","NVDA","MSFT","GOOGL","AOT","CPALL","PTT","DELTA","SCB"],
+  ETF: ["VOO","QQQ","QQQM","SPY","GLD"]
+};
+
+const BROKERS = [
+  {
+    name: "Mitrade",
+    desc: "กำกับโดย ASIC+CIMA+FSC · โบนัสสูงสุด [FT9GU]",
+    link: "https://i.miactivitys.com/index-th-TH.html?c=FT9GU&na=TH&id=invite_260108_5.0&p=other&v=v4.3&t=1786812863392&n=en****en1@gmail.com&s=apply4",
+    color: "bg-emerald-500 text-white",
+    icon: "🏆",
+    badge: "แนะนำ"
+  },
+  {
+    name: "Exness",
+    desc: "สเปรดเริ่ม 0.0 pip · ถอนอัตโนมัติ 24 ชม.",
+    link: "https://one.exnessonelink.com/a/80dmb5wr12?source=app",
+    color: "bg-yellow-400 text-black",
+    icon: "⭐"
+  },
+  {
+    name: "XM Global",
+    desc: "โบนัส 100% สูงสุด $5,000 · เลเวอเรจ 1:1000",
+    link: "https://www.xmglobal.com/referral?token=Jap-L9h7S19cmlEnDtElZA",
+    color: "bg-red-600 text-white",
+    icon: "🔥"
+  },
+  {
+    name: "Trendo",
+    desc: "คืนเงินสูงสุด 60% · แอปใช้ง่าย",
+    link: "https://trendo.com/invite?market=googleplay&code=3199411",
+    color: "bg-indigo-600 text-white",
+    icon: "🚀"
+  }
+];
+
+const PLAN_EXPIRE_MIN = 15;
+let currentTab = "GOLD", currentSym = "GOLD", currentTF = "5";
+let planCreatedAt = null, prices = {...BASE}, chartLoaded = false;
+
+function fmtTime(d){return d?d.toLocaleTimeString('th-TH',{hour:'2-digit',minute:'2-digit',second:'2-digit',hour12:false}):"--:--:--";}
+function planAgeMin(){return planCreatedAt?Math.floor((Date.now()-planCreatedAt.getTime())/60000):null;}
+function freshness(age){
+  if(age===null)return{text:"รอวิเคราะห์",cls:"bg-slate-800 text-slate-400",border:""};
+  if(age<=PLAN_EXPIRE_MIN)return{text:`✅ ใช้ได้ (${age} นาที)`,cls:"bg-emerald-500/20 text-emerald-300",border:"plan-fresh"};
+  if(age<=PLAN_EXPIRE_MIN+5)return{text:`⚠️ ใกล้หมดอายุ (${age} นาที)`,cls:"bg-yellow-500/20 text-yellow-300",border:"plan-warn"};
+  return{text:`❌ หมดอายุแล้ว (${age} นาที)`,cls:"bg-red-500/20 text-red-300",border:"plan-expired"};
+}
+
+setInterval(()=>{
+  const now=new Date(),age=planAgeMin(),fs=freshness(age);
+  document.getElementById('nowTime').textContent=fmtTime(now);
+  document.getElementById('planAge').textContent=age!==null?`${age} นาที`:"-- นาที";
+  const b=document.getElementById('freshBadge');b.textContent=fs.text;b.className=`text-[10px] px-2 py-1 rounded-full border ${fs.cls}`;
+  document.querySelectorAll('.plan-card').forEach(c=>{c.classList.remove('plan-fresh','plan-warn','plan-expired');if(fs.border)c.classList.add(fs.border);});
+},1000);
+
+function loadChart(symbol,interval){
+  const container=document.getElementById('tradingview_chart_container');
+  if(!window.TradingView){
+    container.innerHTML=`<div class="text-center p-8 text-amber-400">⏳ กำลังโหลดกราฟ... รอสักครู่แล้วลองใหม่</div>`;
+    return;
+  }
+  container.innerHTML=""; chartLoaded=false;
+  new TradingView.widget({
+    container_id:"tradingview_chart_container",
+    width:"100%",height:"480",symbol:symbol,interval:interval,
+    timezone:"Asia/Bangkok",theme:"dark",style:"1",locale:"th",
+    toolbar_bg:"#1e293b",enable_publishing:false,allow_symbol_change:true
+  });
+  chartLoaded=true;
+}
+
+async function fetchPrices(){
+  try{
+    const r=await fetch("https://api.binance.com/api/v3/ticker/price");
+    const d=await r.json();
+    d.forEach(x=>{
+      if(x.symbol==="BTCUSDT") prices.BTCUSDT=parseFloat(x.price).toFixed(2),prices.BTCUSD=prices.BTCUSDT;
+      if(x.symbol==="BTCTHB") prices.BTCTHB=parseFloat(x.price).toFixed(2);
+      if(x.symbol==="ETHUSDT") prices.ETHUSDT=parseFloat(x.price).toFixed(2);
+    });
+    document.getElementById('livePrice').textContent=prices[currentSym]||BASE[currentSym];
+    renderAssets();
+  }catch(e){console.log("API ใช้ราคาฐาน");}
+}
+
+function setTab(tab){
+  currentTab=tab;
+  Object.keys(ASSETS).forEach(t=>{
+    const b=document.getElementById('tab_'+t);
+    if(b)b.className=t===tab?"tab text-[10px] font-bold px-2 py-1 rounded-full bg-emerald-500 text-black":"tab text-[10px] font-bold px-2 py-1 rounded-full bg-slate-800 text-slate-400";
+  });
+  renderAssets();
+}
+
+function renderAssets(){
+  const q=(document.getElementById('search').value||"").toUpperCase();
+  document.getElementById('assetList').innerHTML=(ASSETS[currentTab]||[]).filter(s=>s.includes(q)).map(s=>{
+    const p=prices[s]||BASE[s]||"--";
+    return `<div onclick="pick('${s}')" class="flex justify-between items-center p-2 rounded-lg cursor-pointer transition ${s===currentSym?'bg-emerald-500/20 border border-emerald-500/40':'bg-slate-900/60 hover:bg-slate-800/50'}">
+      <span class="font-bold text-sm">${s}</span><span class="mono text-xs text-emerald-300">${p}</span>
+    </div>`;
+  }).join('');
+}
+
+function pick(sym){
+  currentSym=sym; chartLoaded=false;
+  const p=prices[sym]||BASE[sym]||"--";
+  document.getElementById('symName').textContent=sym;
+  document.getElementById('livePrice').textContent=p;
+  const tvSym=TVMAP[sym]||sym;
+  document.getElementById('inpSym').value=tvSym;
+  setTimeout(()=>loadChart(tvSym,currentTF),400);
+  renderAssets();
+}
+
+function setTF(tf){
+  currentTF=tf; chartLoaded=false;
+  document.querySelectorAll('.tf').forEach(b=>{
+    b.className=b.dataset.tf===tf?"tf text-[11px] px-2 py-1 rounded-full bg-emerald-500 text-black font-bold":"tf text-[11px] px-2 py-1 rounded-full bg-slate-800 text-slate-400";
+  });
+  document.getElementById('inpTF').value=tf;
+  const tvSym=document.getElementById('inpSym').value;
+  setTimeout(()=>loadChart(tvSym,tf),400);
+}
+
+function analyze(){
+  planCreatedAt=new Date();
+  document.getElementById('planTime').textContent=fmtTime(planCreatedAt);
+  const base=parseFloat(prices[currentSym]||BASE[currentSym]||1000);
+  const bid=parseFloat(document.getElementById('inpBid').value)||base;
+  const ask=parseFloat(document.getElementById('inpAsk').value)||(base+(base*0.0005));
+  const spread=Math.round((ask-bid)*10000)/10000;
+  const mid=Math.round(((bid+ask)/2)*100)/100;
+  const atr=12.8;
+
+  document.getElementById('report').classList.remove('hidden');
+  document.getElementById('reportContent').innerHTML=`
+    <div class="grid grid-cols-2 gap-2 p-2 bg-slate-900 rounded-lg">
+      <div class="flex justify-between"><span class="text-slate-500">สินทรัพย์</span><b>${currentSym}</b></div>
+      <div class="flex justify-between"><span class="text-slate-500">Bid/Ask</span><b class="text-emerald-300">${bid.toFixed(2)} / ${ask.toFixed(2)}</b></div>
+      <div class="flex justify-between"><span class="text-slate-500">Spread</span><b>${spread.toFixed(4)}</b></div>
+      <div class="flex justify-between"><span class="text-slate-500">จุดกลาง</span><b>${mid.toFixed(2)}</b></div>
+    </div>`;
+
+  const plans=[];
+  if(bid>mid){
+    const el=Math.round((mid-atr*0.15)*100)/100, eh=Math.round((mid+atr*0.15)*100)/100;
+    const sl=Math.round((el-atr*1.5-spread)*100)/100;
+    plans.push({d:"BUY",state:bid>eh?"ARMED":"WATCHING",el,eh,sl,tp1:Math.round((eh+atr*1.5)*100)/100});
+  } else {
+    const el=Math.round((mid-atr*0.15)*100)/100, eh=Math.round((mid+atr*0.15)*100)/100;
+    const sl=Math.round((eh+atr*1.5+spread)*100)/100;
+    plans.push({d:"SELL",state:bid<el?"ARMED":"WATCHING",el,eh,sl,tp1:Math.round((el-atr*1.5)*100)/100});
+  }
+
+  document.getElementById('planList').innerHTML=plans.map(p=>{
+    const stClass=p.state==="ARMED"?"bg-emerald-600/20 text-emerald-400":"bg-slate-700/50 text-slate-300";
+    return `<div class="plan-card bg-slate-900/60 rounded-xl p-3 border-2 plan-fresh">
+      <div class="flex justify-between items-center mb-2">
+        <span class="font-bold ${p.d==='BUY'?'text-emerald-400':'text-rose-400'}">${p.d==="BUY"?"🔴 ซื้อ":"🔵 ขาย"}</span>
+        <span class="px-2 py-0.5 rounded text-xs font-bold ${stClass}">${p.state==="ARMED"?"⚔️ พร้อม":"👁️ รอ"}</span>
+      </div>
+      <div class="grid grid-cols-2 gap-1 text-[10px]">
+        <div>Entry: <b>${p.el.toFixed(2)}–${p.eh.toFixed(2)}</b></div>
+        <div>SL: <b class="text-rose-400">${p.sl.toFixed(2)}</b></div>
+        <div>TP1: <b class="text-emerald-300">${p.tp1.toFixed(2)}</b></div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function renderBrokers(){
+  const grid=document.getElementById('brokerGrid');
+  if(!grid)return;
+  grid.innerHTML=BROKERS.map((b,idx)=>`
+    <a href="${b.link}" target="_blank" class="bg-[#1e293b] border border-slate-700/80 rounded-2xl p-4 block hover:bg-slate-800/50 transition relative ${idx===0?'ring-2 ring-emerald-500/50':''}">
+      ${b.badge?`<span class="absolute top-2 right-2 text-[9px] font-bold bg-emerald-500 text-black px-2 py-0.5 rounded-full">${b.badge}</span>`:''}
+      <div class="flex items-center gap-3 mb-2">
+        <div class="w-10 h-10 rounded-xl ${b.color} flex items-center justify-center text-lg font-bold">${b.icon}</div>
+        <div>
+          <div class="font-bold text-[14px]">${b.name}</div>
+          <div class="text-[11px] text-slate-400">${b.desc}</div>
+        </div>
+      </div>
+    </a>
+  `).join('');
+}
+
+window.onload=()=>{
+  setTab('GOLD');
+  pick('GOLD');
+  renderBrokers();
+  fetchPrices();
+  setInterval(fetchPrices, 5000);
+};
+</script>
+</body>
+  </html>
+    
