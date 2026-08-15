@@ -1,0 +1,324 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>MNS TRADE NAVIGATOR V3.8.8 - Pro Terminal</title>
+<meta name="description" content="MNS Trade Navigator Pro Terminal - Map, Event Strategy & Stable Chart">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800;900&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+<script src="https://cdn.tailwindcss.com"></script>
+<!-- โหลดไลบรารี TradingView Widget อย่างเป็นทางการเพื่อแก้ปัญหาจอดำ -->
+<script type="text/javascript" src="https://s3.tradingview.com/tv.js"></script>
+<style>
+body{font-family:Inter,system-ui;background:#020617;color:#e2e8f0}
+.mono{font-family:JetBrains Mono,monospace}
+.glow-yellow{box-shadow:0 0 18px rgba(250,204,21,.45)}
+.glow-red{box-shadow:0 0 18px rgba(239,68,68,.45)}
+.glow-emerald{box-shadow:0 0 18px rgba(16,185,129,.45)}
+.glow-indigo{box-shadow:0 0 18px rgba(99,102,241,.45)}
+.pulse{animation:pulse 2s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.85;transform:scale(1.02)}}
+</style>
+</head>
+<body class="min-h-screen bg-[radial-gradient(circle_at_1px_1px,_rgba(16,185,129,0.07)_1px,_transparent_0)] bg-[length:24px_24px]">
+
+<!-- HEADER -->
+<header class="sticky top-0 z-50 backdrop-blur-xl bg-slate-900/85 border-b border-slate-800">
+<div class="h-[2px] w-full bg-gradient-to-r from-emerald-400 via-yellow-400 to-indigo-500"></div>
+<div class="max-w-[1600px] mx-auto px-4 py-3 flex flex-wrap items-center gap-3">
+<div class="flex items-center gap-2.5">
+<span class="font-black text-[16px] tracking-widest text-emerald-400">MNS</span>
+<span class="text-[10px] font-black tracking-[0.2em] bg-black text-emerald-400 border border-emerald-500/30 px-2.5 py-1 rounded-full hidden sm:inline">PRO TERMINAL</span>
+</div>
+<div class="flex flex-wrap gap-2.5">
+<a href="https://one.exnessonelink.com/a/80dmb5wr12?source=app" target="_blank" class="glow-yellow pulse bg-yellow-400 text-black font-black text-[13px] px-5 py-2 rounded-full hover:scale-105 transition border border-white/10">Exness เปิดเลย → ⭐</a>
+<a href="https://www.xmglobal.com/referral?token=Jap-L9h7S19cmlEnDtElZA" target="_blank" class="glow-red bg-red-600 text-white font-bold text-[13px] px-5 py-2 rounded-full hover:scale-105 transition border border-white/10">XM Global 🔥</a>
+<a href="https://i.miactivitys.com/index-th-TH.html?c=FT9GU&na=TH&id=invite_260108_5.0&p=other&v=v4.3&t=1786761937590&n=en****en1@gmail.com&s=apply4" target="_blank" class="glow-emerald bg-emerald-500 text-black font-black text-[13px] px-5 py-2 rounded-full hover:scale-105 transition border border-white/10">Activity 💰</a>
+<a href="https://trendo.com/invite?market=googleplay&code=3199411" target="_blank" class="glow-indigo bg-indigo-600 text-white font-bold text-[13px] px-5 py-2 rounded-full hover:scale-105 transition border border-white/10">Trendo 🚀</a>
+</div>
+<span class="ml-auto text-[10px] mono text-slate-500 hidden lg:block">V3.8.8 PLAN RANGE & DURATION</span>
+</div>
+</header>
+
+<!-- MAIN CONTAINER -->
+<main class="max-w-[1600px] mx-auto px-4 py-5 grid grid-cols-12 gap-4">
+
+<!-- LEFT ASSETS & MAP WITH EVENT STRATEGY -->
+<div class="col-span-12 lg:col-span-3 space-y-4">
+<div class="bg-[#1e293b] border border-slate-700/80 rounded-2xl p-4">
+<div class="flex gap-1 mb-3">
+<button onclick="setTab('FOREX')" id="tab_FOREX" class="tab text-[11px] font-bold px-3 py-1.5 rounded-full bg-slate-800 text-slate-400">FOREX</button>
+<button onclick="setTab('GOLD')" id="tab_GOLD" class="tab text-[11px] font-bold px-3 py-1.5 rounded-full bg-slate-800 text-slate-400">GOLD</button>
+<button onclick="setTab('INDICES')" id="tab_INDICES" class="tab text-[11px] font-bold px-3 py-1.5 rounded-full bg-slate-800 text-slate-400">INDICES</button>
+<button onclick="setTab('CRYPTO')" id="tab_CRYPTO" class="tab text-[11px] font-bold px-3 py-1.5 rounded-full bg-emerald-500 text-black">CRYPTO</button>
+</div>
+<input id="search" placeholder="ค้นหาสัญลักษณ์..." oninput="renderAssets()" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-[12px] mono focus:outline-none focus:border-emerald-500 mb-3">
+<div id="assetList" class="space-y-1.5 max-h-[260px] overflow-auto"></div>
+</div>
+
+<!-- MAP QUALITY & EVENT STRATEGY -->
+<div class="bg-[#1e293b] border border-slate-700/80 rounded-2xl p-4 space-y-3">
+<div class="text-[11px] font-black tracking-widest text-slate-300">🗺️ MAP & EVENT STRATEGY</div>
+<div class="flex items-center gap-4 bg-slate-900/60 p-3 rounded-xl border border-slate-800">
+<div class="w-16 h-16 rounded-full border-4 border-emerald-500 grid place-items-center font-black text-lg text-emerald-300 shadow-[0_0_15px_rgba(16,185,129,.3)]">86<span class="text-[9px]">/100</span></div>
+<div class="space-y-1 text-[11px] mono">
+<div class="flex justify-between gap-4"><span class="text-slate-500">ATR</span><b class="text-slate-200" id="m_atr">12.8</b></div>
+<div class="flex justify-between gap-4"><span class="text-slate-500">EVENT PROT</span><b class="text-emerald-300">ACTIVE</b></div>
+<div class="flex justify-between gap-4"><span class="text-slate-500">BIAS</span><b class="text-emerald-300">BULLISH</b></div>
+</div>
+</div>
+
+<!-- ปฏิทินเศรษฐกิจ (Economic Calendar) -->
+<div>
+<div class="text-[10px] font-bold text-slate-400 mb-1">📅 HIGH-IMPACT EVENT MONITOR</div>
+<div class="tradingview-widget-container" style="height:200px;width:100%;">
+<iframe src="https://s.tradingview.com/embed-widget/events/?locale=en#%7B%22colorTheme%22%3A%22dark%22%2C%22isTransparent%22%3A%22true%22%2C%22width%22%3A%22100%25%22%2C%22height%22%3A%22200%22%2C%22importanceFilter%22%3A%220%2C1%22%2C%22currencyFilter%22%3A%22USD%2CEUR%2CGBP%2CJPY%2CAUD%2CBTC%22%7D" style="width:100%;height:200px;border:0;background:transparent"></iframe>
+</div>
+</div>
+
+<!-- ข่าวสาร (News) -->
+<div>
+<div class="text-[10px] font-bold text-slate-400 mb-1">📰 MARKET NEWS FEED</div>
+<div class="tradingview-widget-container" style="height:200px;width:100%;">
+<iframe src="https://s.tradingview.com/embed-widget/timeline/?locale=en#%7B%22feedMode%22%3A%22all_symbols%22%2C%22colorTheme%22%3A%22dark%22%2C%22isTransparent%22%3A%22true%22%2C%22displayMode%22%3A%22compact%22%2C%22width%22%3A%22100%25%22%2C%22height%22%3A%22200%22%7D" style="width:100%;height:200px;border:0;background:transparent"></iframe>
+</div>
+</div>
+
+</div>
+</div>
+
+<!-- CENTER CHART -->
+<div class="col-span-12 lg:col-span-6 space-y-4">
+<div class="bg-[#1e293b] border border-slate-700/80 rounded-2xl overflow-hidden">
+<div class="flex flex-wrap items-center justify-between p-4 border-b border-slate-800 gap-2">
+<div>
+<div class="flex items-center gap-2">
+<span id="symName" class="font-black text-[18px] tracking-wide">BTCUSD</span>
+<span id="livePrice" class="mono text-[18px] text-emerald-300">--</span>
+<span id="liveCh" class="text-[11px] px-1.5 py-0.5 rounded bg-emerald-500/20 text-emerald-300">+0.59%</span>
+</div>
+<div class="text-[10px] mono text-slate-500">LIVE API SYNC • Stable Chart Active</div>
+</div>
+<div class="flex gap-1">
+<button onclick="setTF('1')" class="tf text-[11px] px-2.5 py-1 rounded-full bg-slate-800 text-slate-400" data-tf="1">1m</button>
+<button onclick="setTF('5')" class="tf text-[11px] px-2.5 py-1 rounded-full bg-emerald-500 text-black font-bold" data-tf="5">5m</button>
+<button onclick="setTF('15')" class="tf text-[11px] px-2.5 py-1 rounded-full bg-slate-800 text-slate-400" data-tf="15">15m</button>
+<button onclick="setTF('30')" class="tf text-[11px] px-2.5 py-1 rounded-full bg-slate-800 text-slate-400" data-tf="30">30m</button>
+<button onclick="setTF('60')" class="tf text-[11px] px-2.5 py-1 rounded-full bg-slate-800 text-slate-400" data-tf="60">1h</button>
+</div>
+</div>
+<!-- พื้นที่แสดงกราฟแบบ script วิดเจ็ต ป้องกันจอดำ -->
+<div id="tradingview_chart_container" style="height:620px;width:100%;background:#0f172a;"></div>
+</div>
+</div>
+
+<!-- RIGHT INPUT & PLAN -->
+<div class="col-span-12 lg:col-span-3 space-y-4">
+<div class="bg-[#1e293b] border border-slate-700/80 rounded-2xl p-4">
+<div class="text-[11px] font-black tracking-widest mb-3">INPUT / กำหนดแผนเทรด</div>
+<div class="grid grid-cols-2 gap-2 mb-3">
+<input id="inpSym" value="BINANCE:BTCUSD" placeholder="Symbol" class="col-span-2 bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-[12px] mono focus:border-emerald-500 outline-none">
+<select id="inpTF" class="bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-[12px] focus:border-emerald-500 outline-none"><option value="1">1m</option><option value="5" selected>5m</option><option value="15">15m</option><option value="30">30m</option><option value="60">1h</option></select>
+<select id="inpDuration" class="bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-[12px] focus:border-emerald-500 outline-none text-emerald-400 font-bold">
+<option value="Intraday (ภายในวัน)">⏱️ Intraday (ภายในวัน)</option>
+<option value="Daily (1-3 วัน)">📅 Daily (1-3 วัน)</option>
+<option value="Weekly (สัปดาห์นี้)">📆 Weekly (สัปดาห์นี้)</option>
+<option value="Session (รอบข่าวสำคัญ)">⚡ Session (รอบข่าว)</option>
+</select>
+<input id="inpMinPrice" placeholder="ราคาต่ำสุดโซน (Min)" class="bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-[12px] mono focus:border-emerald-500 outline-none">
+<input id="inpMaxPrice" placeholder="ราคาสูงสุดโซน (Max)" class="bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-[12px] mono focus:border-emerald-500 outline-none">
+<input id="inpBid" placeholder="Bid (ราคาซื้ออ้างอิง)" class="bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-[12px] mono focus:border-emerald-500 outline-none">
+<input id="inpAsk" placeholder="Ask (ราคาขายอ้างอิง)" class="bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-[12px] mono focus:border-emerald-500 outline-none">
+</div>
+<button onclick="analyze()" class="w-full bg-gradient-to-r from-emerald-500 to-cyan-400 text-black font-black py-2.5 rounded-xl text-[13px] shadow-[0_0_20px_rgba(16,185,129,.35)] hover:scale-[1.02] transition">วิเคราะห์แผนและช่วงราคา →</button>
+<div class="text-[9px] mono text-slate-500 mt-2 text-center">ช่องราคา/ช่วงเวลาเว้นว่างได้ ระบบจะคำนวณให้อัตโนมัติ</div>
+</div>
+
+<div id="report" class="bg-[#1e293b] border border-slate-700/80 rounded-2xl p-4 hidden">
+<div class="text-[11px] font-black tracking-widest mb-3">REPORT / รายงาน</div>
+<div id="reportContent" class="space-y-3 text-[11px]"></div>
+</div>
+
+<div class="bg-[#1e293b] border border-slate-700/80 rounded-2xl p-4">
+<div class="text-[11px] font-black tracking-widest mb-2">EVENT PLAN / แผนรับมือ Event</div>
+<div id="planList" class="space-y-2"><div class="text-[11px] text-slate-500 text-center py-6">กดวิเคราะห์เพื่อสร้างแผนกลยุทธ์ Event</div></div>
+</div>
+</div>
+
+<!-- BROKER GATEWAY -->
+<div class="col-span-12">
+<div class="flex items-center justify-between mb-4 mt-2">
+<h2 class="text-[14px] font-black tracking-widest">🔥 BROKER GATEWAY <span class="text-slate-500 font-normal">/ ทางเข้าโบรกเกอร์</span></h2>
+</div>
+<div class="grid sm:grid-cols-2 lg:grid-cols-3 gap-4" id="brokerGrid"></div>
+</div>
+
+</main>
+
+<script>
+const BASE={EURUSD:1.0845,GBPUSD:1.2721,USDJPY:155.32,AUDUSD:0.6632,XAUUSD:4376.82,XAGUSD:52.45,US30:45210,NAS100:19650,SPX500:5612,GER40:20560,UK100:8915,JP225:41820,BTCUSD:63000,ETHUSD:2450};
+const TVMAP={XAUUSD:"OANDA:XAUUSD",XAGUSD:"OANDA:XAGUSD",EURUSD:"FX:EURUSD",GBPUSD:"FX:GBPUSD",USDJPY:"FX:USDJPY",AUDUSD:"FX:AUDUSD",US30:"FOREXCOM:DJI",NAS100:"NASDAQ:NDX",SPX500:"FOREXCOM:SPXUSD",GER40:"XETR:DAX",UK100:"FOREXCOM:UKXGBP",JP225:"FOREXCOM:JP225",BTCUSD:"BINANCE:BTCUSD",ETHUSD:"BINANCE:ETHUSD"};
+const ASSETS={FOREX:["EURUSD","GBPUSD","USDJPY","AUDUSD"],GOLD:["XAUUSD","XAGUSD"],INDICES:["US30","NAS100","SPX500","GER40","UK100","JP225"],CRYPTO:["BTCUSD","ETHUSD"]};
+
+let currentTab="CRYPTO", currentSym="BTCUSD", currentTF="5", prices={...BASE};
+
+const BROKERS=[
+{key:"exness",name:"Exness",color:"bg-yellow-400",letter:"E",spread:"0.0 pip",bonus:"โบนัสสูงสุด $500 · สเปรดต่ำ",stars:5,defaultLink:"https://one.exnessonelink.com/a/80dmb5wr12?source=app",border:"border-t-yellow-400"},
+{key:"xm",name:"XM Global",color:"bg-blue-500",letter:"X",spread:"0.6 pip",bonus:"โบนัส 100% สูงสุด $5,000",stars:5,defaultLink:"https://www.xmglobal.com/referral?token=Jap-L9h7S19cmlEnDtElZA",border:"border-t-red-600"},
+{key:"activity",name:"Activity",color:"bg-violet-500",letter:"A",spread:"0.0 pip",bonus:"คืนเงินสูงสุด 60%",stars:4.5,defaultLink:"https://i.miactivitys.com/index-th-TH.html?c=FT9GU&na=TH&id=invite_260108_5.0&p=other&v=v4.3&t=1786761937590&n=en****en1@gmail.com&s=apply4",border:"border-t-emerald-500"}
+];
+
+async function fetchLivePrices() {
+    try {
+        let res = await fetch('https://api.binance.com/api/v3/ticker/price');
+        let data = await res.json();
+        data.forEach(item => {
+            if(item.symbol === 'BTCUSDT') prices['BTCUSD'] = parseFloat(item.price).toFixed(2);
+            if(item.symbol === 'ETHUSDT') prices['ETHUSD'] = parseFloat(item.price).toFixed(2);
+        });
+        let currentLivePrice = prices[currentSym] || BASE[currentSym] || 100;
+        let priceEl = document.getElementById('livePrice');
+        if(priceEl) priceEl.innerText = currentLivePrice;
+        renderAssets();
+    } catch(e) {
+        console.log("Using base prices");
+    }
+}
+
+function setTab(tab) {
+    currentTab = tab;
+    ['FOREX', 'GOLD', 'INDICES', 'CRYPTO'].forEach(t => {
+        let btn = document.getElementById('tab_' + t);
+        if(btn) {
+            btn.className = (t === tab) ? "tab text-[11px] font-bold px-3 py-1.5 rounded-full bg-emerald-500 text-black" : "tab text-[11px] font-bold px-3 py-1.5 rounded-full bg-slate-800 text-slate-400";
+        }
+    });
+    renderAssets();
+}
+
+function renderAssets() {
+    let list = document.getElementById('assetList');
+    if(!list) return;
+    list.innerHTML = "";
+    let q = (document.getElementById('search').value || "").toLowerCase();
+    
+    let symbols = ASSETS[currentTab] || [];
+    symbols.forEach(sym => {
+        if(q && !sym.toLowerCase().includes(q)) return;
+        let p = prices[sym] || BASE[sym] || 100;
+        let activeClass = (sym === currentSym) ? "border-emerald-500 bg-slate-800/80" : "border-slate-800 bg-slate-900/50 hover:bg-slate-800/40";
+        
+        let div = document.createElement('div');
+        div.className = `flex items-center justify-between p-2.5 rounded-xl border cursor-pointer transition ${activeClass}`;
+        div.onclick = () => selectSymbol(sym);
+        div.innerHTML = `
+            <div>
+                <div class="font-bold text-[12px] text-slate-200">${sym}</div>
+                <div class="text-[9px] text-slate-500 mono">${currentTab}</div>
+            </div>
+            <div class="text-right">
+                <div class="mono text-[12px] text-emerald-300">${p}</div>
+                <div class="text-[9px] text-emerald-400">+Live</div>
+            </div>
+        `;
+        list.appendChild(div);
+    });
+}
+
+function selectSymbol(sym) {
+    currentSym = sym;
+    let currentLivePrice = prices[sym] || BASE[sym] || 100;
+    document.getElementById('symName').innerText = sym;
+    document.getElementById('livePrice').innerText = currentLivePrice;
+    
+    let tvSymbol = TVMAP[sym] || "BINANCE:" + sym;
+    document.getElementById('inpSym').value = tvSymbol;
+    
+    loadChart(tvSymbol, currentTF);
+    renderAssets();
+}
+
+function loadChart(symbol, interval) {
+    document.getElementById('tradingview_chart_container').innerHTML = "";
+    new TradingView.widget({
+        "width": "100%",
+        "height": "620",
+        "symbol": symbol,
+        "interval": interval,
+        "timezone": "Etc/UTC",
+        "theme": "dark",
+        "style": "1",
+        "locale": "en",
+        "toolbar_bg": "#1e293b",
+        "enable_publishing": false,
+        "allow_symbol_change": false,
+        "container_id": "tradingview_chart_container"
+    });
+}
+
+function setTF(tf) {
+    currentTF = tf;
+    document.querySelectorAll('.tf').forEach(btn => {
+        btn.className = (btn.getAttribute('data-tf') === tf) ? "tf text-[11px] px-2.5 py-1 rounded-full bg-emerald-500 text-black font-bold" : "tf text-[11px] px-2.5 py-1 rounded-full bg-slate-800 text-slate-400";
+    });
+    document.getElementById('inpTF').value = tf;
+    let tvSymbol = document.getElementById('inpSym').value || TVMAP[currentSym];
+    loadChart(tvSymbol, tf);
+}
+
+function analyze() {
+    let sym = document.getElementById('inpSym').value || currentSym;
+    let duration = document.getElementById('inpDuration').value;
+    let minPriceInput = document.getElementById('inpMinPrice').value;
+    let maxPriceInput = document.getElementById('inpMaxPrice').value;
+    let bidInput = document.getElementById('inpBid').value;
+    let askInput = document.getElementById('inpAsk').value;
+    
+    let basePrice = parseFloat(prices[currentSym] || BASE[currentSym] || 100);
+    let bid = bidInput ? parseFloat(bidInput) : basePrice;
+    let ask = askInput ? parseFloat(askInput) : (basePrice + 0.5);
+
+    // คำนวณช่วงราคา (Price Range) อัตโนมัติหากผู้ใช้ไม่ได้กรอกมา
+    let zoneMin = minPriceInput ? parseFloat(minPriceInput) : (bid * 0.995).toFixed(2);
+    let zoneMax = maxPriceInput ? parseFloat(maxPriceInput) : (ask * 1.005).toFixed(2);
+
+    let reportEl = document.getElementById('report');
+    let reportContent = document.getElementById('reportContent');
+    reportEl.classList.remove('hidden');
+    
+    reportContent.innerHTML = `
+        <div class="p-2.5 bg-slate-900 rounded-lg border border-slate-700/50 space-y-1.5">
+            <div class="flex justify-between"><span class="text-slate-400">สินทรัพย์:</span><b class="text-emerald-300">${sym}</b></div>
+            <div class="flex justify-between"><span class="text-slate-400">อายุแผน / ช่วงเวลา:</span><b class="text-amber-300">${duration}</b></div>
+            <div class="flex justify-between"><span class="text-slate-400">ช่วงราคา (Zone):</span><b class="mono text-cyan-300">${zoneMin} - ${zoneMax}</b></div>
+            <div class="flex justify-between"><span class="text-slate-400">สถานะ Event:</span><b class="text-emerald-400">PROTECTED / พร้อมลุย</b></div>
+        </div>
+    `;
+
+    let planList = document.getElementById('planList');
+    let tp1 = (zoneMax * 1.008).toFixed(2);
+    let sl1 = (zoneMin * 0.990).toFixed(2);
+    
+    planList.innerHTML = `
+        <div class="p-3 bg-emerald-500/10 border border-emerald-500/30 rounded-xl space-y-1.5 text-[11px]">
+            <div class="font-bold text-emerald-300">🎯 แผนเทรดตามช่วงเวลาและราคา</div>
+            <div class="flex justify-between text-slate-300"><span>อายุแผน:</span><b class="text-amber-300">${duration}</b></div>
+            <div class="flex justify-between text-slate-300"><span>โซนเข้าราคา:</span><b class="mono text-cyan-300">${zoneMin} ถึง ${zoneMax}</b></div>
+            <div class="flex justify-between text-slate-300"><span>Take Profit (TP):</span><b class="mono text-emerald-400">${tp1}</b></div>
+            <div class="flex justify-between text-slate-300"><span>Stop Loss (SL):</span><b class="mono text-red-400">${sl1}</b></div>
+            <div class="text-[10px] text-amber-300 mt-1 pt-1 border-t border-emerald-500/20">⚠️ แผนจะหมดอายุอัตโนมัติตามกรอบเวลาที่เลือก</div>
+        </div>
+    `;
+}
+
+function renderBrokers() {
+    let grid = document.getElementById('brokerGrid');
+    if(!grid) return;
+    grid.innerHTML = BROKERS.map(b => `
+        <div class="bg-[#1e293b] border border-slate-700/80 rounded-2xl p-4 relative overflow-hidden border-t-4 ${b.border}">
+            <div class="flex items-center justify-between mb-3">
+                <div class="flex items-center gap-2.5">
+                    <div class="w-9 h-9 rounded-xl ${b.color} text-black font-black grid place-items-center text-sm shadow">${b.letter}</div>
+                    <div>
+                        <div class="font-bold text-[13px] text-white">${b.name}</div>
+                        <div class="text-[10px] text-slate-4
