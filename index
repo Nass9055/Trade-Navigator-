@@ -1,0 +1,50 @@
+// ✅ BROKER LIST — แก้ไขให้ถูกต้องครบถ้วน
+const BROKERS = [
+  {
+    name: "Mitrade",
+    desc: "กำกับโดย ASIC + CIMA + FSC · คอมมิชชั่น 0 · รับโบนัสสูงสุด $100",
+    link: "https://i.miactivitys.com/index-th-TH.html?c=FT9GU&na=TH&id=invite_260108_5.0&p=other&v=v4.3&t=1786811099497&n=en****en1@gmail.com&s=apply4",
+    color: "bg-emerald-500 text-white",
+    icon: "🏆",
+    badge: "แนะนำ"
+  },
+  {
+    name: "Exness",
+    desc: "สเปรดเริ่ม 0.0 pip · ถอนอัตโนมัติ 24 ชม.",
+    link: "https://one.exnessonelink.com/a/80dmb5wr12?source=app",
+    color: "bg-yellow-400 text-black",
+    icon: "⭐"
+  },
+  {
+    name: "XM Global",
+    desc: "โบนัส 100% สูงสุด $5,000 · เลเวอเรจสูงถึง 1:1000",
+    link: "https://www.xmglobal.com/referral?token=Jap-L9h7S19cmlEnDtElZA",
+    color: "bg-red-600 text-white",
+    icon: "🔥"
+  },
+  {
+    name: "Trendo",
+    desc: "คืนเงินสูงสุด 60% · แอปใช้งานง่าย",
+    link: "https://trendo.com/invite?market=googleplay&code=3199411",
+    color: "bg-indigo-600 text-white",
+    icon: "🚀"
+  }
+];
+
+// ✅ แก้ไขฟังก์ชันแสดงผลให้ถูกต้อง
+function renderBrokers(){
+  const grid = document.getElementById('brokerGrid');
+  if(!grid) return;
+  grid.innerHTML = BROKERS.map((b, idx) => `
+    <a href="${b.link}" target="_blank" class="bg-[#1e293b] border border-slate-700/80 rounded-2xl p-4 block hover:bg-slate-800/50 transition relative ${idx === 0 ? 'ring-2 ring-emerald-500/50' : ''}">
+      ${b.badge ? `<span class="absolute top-2 right-2 text-[9px] font-bold bg-emerald-500 text-black px-2 py-0.5 rounded-full">${b.badge}</span>` : ''}
+      <div class="flex items-center gap-3 mb-2">
+        <div class="w-10 h-10 rounded-xl ${b.color} flex items-center justify-center text-lg font-bold">${b.icon}</div>
+        <div>
+          <div class="font-bold text-[14px]">${b.name}</div>
+          <div class="text-[11px] text-slate-400">${b.desc}</div>
+        </div>
+      </div>
+    </a>
+  `).join('');
+}
