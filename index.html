@@ -1,0 +1,396 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<title>MNS Pro V2.5 — Institutional SMC Gold Engine</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdn.tailwindcss.com"></script>
+<style>
+*{ box-sizing:border-box; margin:0; padding:0; }
+html, body{ width:100%; height:100%; overflow:hidden; }
+body{ font-family:'Inter',system-ui,-apple-system,sans-serif; background: radial-gradient(circle at top,#172554 0%,#020617 45%,#020617 100%); color:#f8fafc; line-height:1.5; }
+button, input, select{ font-family:inherit; }
+button{ -webkit-tap-highlight-color:transparent; }
+.mono{ font-family:'JetBrains Mono',monospace; }
+
+.app{ width:100%; height:100dvh; display:flex; flex-direction:column; overflow:hidden; }
+
+.topbar{ flex:0 0 auto; position:relative; z-index:100; padding: max(8px,env(safe-area-inset-top)) 12px 8px; background: linear-gradient(180deg, rgba(15,23,42,.98), rgba(15,23,42,.94)); border-bottom:1px solid rgba(59,130,246,.25); box-shadow:0 4px 18px rgba(0,0,0,.35); }
+.top-row{ display:flex; align-items:center; justify-content:space-between; gap:10px; }
+.brand{ min-width:0; }
+.brand-title{ font-size:17px; font-weight:900; color:#fbbf24; white-space:nowrap; }
+.brand-sub{ color:#94a3b8; font-size:10px; font-weight:600; }
+.top-actions{ display:flex; align-items:center; gap:6px; }
+.status{ display:inline-flex; align-items:center; gap:4px; padding:5px 9px; border-radius:999px; font-size:10px; font-weight:800; color:#86efac; background:rgba(16,185,129,.12); border:1px solid rgba(16,185,129,.25); white-space:nowrap; }
+.share-btn{ border:none; border-radius:8px; padding:7px 10px; color:#86efac; background:rgba(16,185,129,.12); font-size:12px; font-weight:800; cursor:pointer; }
+.stats{ display:flex; gap:6px; margin-top:7px; }
+.stat{ display:flex; align-items:center; gap:5px; padding:4px 8px; border-radius:8px; background:rgba(30,41,59,.75); border:1px solid rgba(71,85,105,.35); font-size:10px; }
+.stat-label{ color:#94a3b8; }
+.stat-value{ color:#fbbf24; font-weight:900; }
+
+.panel{ flex:1 1 auto; min-height:0; display:flex; flex-direction:column; overflow:hidden; position:relative; z-index:20; }
+
+.tabs{ flex:0 0 auto; display:flex; gap:5px; padding:7px 8px 0; overflow-x:auto; overflow-y:hidden; scrollbar-width:none; background:rgba(15,23,42,.96); border-bottom:1px solid rgba(59,130,246,.15); }
+.tabs::-webkit-scrollbar{ display:none; }
+.mns-tab{ flex:0 0 auto; padding:9px 13px; border-radius:9px 9px 0 0; color:#94a3b8; background:rgba(30,41,59,.75); border:1px solid transparent; border-bottom:none; font-size:12px; font-weight:800; cursor:pointer; transition:.15s ease; }
+.mns-tab.active{ color:#bfdbfe; background:rgba(59,130,246,.2); border-color:rgba(59,130,246,.55); }
+.mns-tab[data-tab="plan"].active{ color:#bbf7d0; background:rgba(16,185,129,.18); border-color:rgba(16,185,129,.5); }
+.mns-tab[data-tab="navi"].active{ color:#fde68a; background:rgba(245,158,11,.18); border-color:rgba(245,158,11,.5); }
+.mns-tab[data-tab="broker"].active{ color:#ddd6fe; background:rgba(139,92,246,.18); border-color:rgba(139,92,246,.5); }
+.mns-tab[data-tab="chat"].active{ color:#fbcfe8; background:rgba(236,72,153,.18); border-color:rgba(236,72,153,.5); }
+
+.content{ flex:1 1 auto; min-height:0; overflow-y:auto; overflow-x:hidden; -webkit-overflow-scrolling:touch; padding: 12px 10px 30px; background:rgba(15,23,42,.55); scrollbar-width:thin; }
+.content::-webkit-scrollbar{ width:5px; }
+.content::-webkit-scrollbar-thumb{ background:rgba(100,116,139,.45); border-radius:99px; }
+.hidden-tab{ display:none!important; }
+
+.section{ margin-bottom:14px; }
+.section-title{ margin-bottom:7px; color:#cbd5e1; font-size:12px; font-weight:800; }
+
+.price-box{ padding:12px; border-radius:12px; background: linear-gradient(135deg, rgba(16,185,129,.12), rgba(15,23,42,.75)); border:1px solid rgba(16,185,129,.25); }
+.main-btn{ width:100%; border:none; border-radius:11px; padding:13px 12px; margin-top:8px; color:white; font-size:14px; font-weight:900; cursor:pointer; background: linear-gradient(135deg, #10b981, #059669); box-shadow: 0 5px 15px rgba(16,185,129,.25); }
+.main-btn.blue{ background: linear-gradient(135deg, #3b82f6, #6366f1, #8b5cf6); box-shadow: 0 5px 15px rgba(59,130,246,.25); }
+.main-btn:active{ transform:scale(.985); }
+.main-btn:disabled{ opacity:.55; cursor:not-allowed; }
+.small-btn{ border:none; border-radius:8px; padding:8px 10px; color:#93c5fd; background:rgba(59,130,246,.12); border:1px solid rgba(59,130,246,.25); font-size:11px; font-weight:800; cursor:pointer; }
+.small-btn.active{ color:#86efac; background:rgba(16,185,129,.12); border-color:rgba(16,185,129,.3); }
+
+.api-status{ margin-top:8px; padding:9px 10px; border-radius:9px; font-size:11px; line-height:1.55; background:rgba(30,41,59,.7); border:1px solid rgba(71,85,105,.3); }
+.api-status.ok{ color:#86efac; }
+.api-status.updating{ color:#fcd34d; }
+.api-status.err{ color:#fca5a5; }
+
+.grid-3{ display:grid; grid-template-columns:repeat(3,1fr); gap:8px; }
+.field-label{ margin-bottom:5px; color:#94a3b8; font-size:10px; font-weight:700; }
+.input{ width:100%; padding:10px; border-radius:9px; color:#f8fafc; background:rgba(30,41,59,.9); border:1px solid rgba(71,85,105,.55); outline:none; font-family:'JetBrains Mono',monospace; font-size:13px; font-weight:700; }
+.input:focus{ border-color:#3b82f6; box-shadow:0 0 0 2px rgba(59,130,246,.12); }
+.input.price{ border-color:rgba(251,191,36,.55); }
+
+.result{ padding:11px; border-radius:10px; background:rgba(30,41,59,.62); border:1px solid rgba(148,163,184,.14); font-size:12px; line-height:1.7; }
+.plan-card{ padding:13px; margin-top:8px; border-radius:11px; border-left:4px solid #3b82f6; background:rgba(30,41,59,.65); }
+.plan-card.direct{ border-color:#10b981; }
+.plan-card.trap{ border-color:#ef4444; }
+.plan-card.wait{ border-color:#f59e0b; }
+.badge{ display:inline-block; padding:4px 8px; border-radius:999px; font-size:9px; font-weight:900; }
+.badge.armed{ color:#86efac; background:rgba(16,185,129,.15); }
+
+.event{ display:flex; align-items:center; justify-content:space-between; gap:8px; padding:8px 0; border-bottom:1px solid rgba(148,163,184,.1); font-size:10px; }
+.event:last-child{ border-bottom:none; }
+.event-time{ color:#94a3b8; }
+
+.broker{ display:block; padding:13px; margin-bottom:9px; border-radius:11px; text-decoration:none; border:1px solid rgba(71,85,105,.35); background:rgba(30,41,59,.7); color:#f8fafc; font-size:13px; font-weight:800; }
+.broker small{ display:block; margin-top:3px; color:#94a3b8; font-size:9px; font-weight:500; }
+
+.chat{ height:100%; min-height:320px; display:flex; flex-direction:column; border-radius:11px; overflow:hidden; background:rgba(15,23,42,.65); border:1px solid rgba(71,85,105,.4); }
+.chat-messages{ flex:1; min-height:230px; overflow-y:auto; padding:10px; display:flex; flex-direction:column; gap:8px; }
+.chat-msg{ max-width:82%; padding:8px 11px; border-radius:13px; font-size:11px; line-height:1.5; }
+.chat-msg.other{ align-self:flex-start; background:rgba(59,130,246,.13); border:1px solid rgba(59,130,246,.2); border-top-left-radius:4px; }
+.chat-msg.me{ align-self:flex-end; color:white; background: linear-gradient(135deg, #3b82f6, #6366f1); border-top-right-radius:4px; }
+.chat-meta{ margin-top:3px; opacity:.6; font-size:8px; text-align:right; }
+.chat-input-row{ flex:0 0 auto; display:flex; gap:6px; padding:8px; border-top:1px solid rgba(71,85,105,.35); background:rgba(30,41,59,.65); }
+.chat-input-row input{ flex:1; min-width:0; padding:9px; border-radius:8px; color:white; background:rgba(15,23,42,.85); border:1px solid rgba(71,85,105,.5); outline:none; font-size:11px; }
+.chat-input-row button{ padding:0 13px; border:none; border-radius:8px; color:white; background:#ec4899; font-size:11px; font-weight:800; cursor:pointer; }
+
+.chart{ flex:0 0 31dvh; min-height:210px; position:relative; z-index:5; background:#020617; border-top:1px solid rgba(59,130,246,.25); overflow:hidden; }
+.tradingview-widget-container { width: 100%; height: 100%; }
+</style>
+</head>
+<body>
+<div class="app">
+  <header class="topbar">
+    <div class="top-row">
+      <div class="brand">
+        <div class="brand-title">🧭 MNS Pro V2.5</div>
+        <div class="brand-sub">Institutional SMC / XAUUSD Engine</div>
+      </div>
+      <div class="top-actions">
+        <span id="systemStatus" class="status">🟢 ออนไลน์</span>
+        <button class="share-btn" onclick="shareApp()">📤 แชร์</button>
+      </div>
+    </div>
+    <div class="stats">
+      <div class="stat"><span class="stat-label">👀 วันนี้</span><span id="userToday" class="stat-value">0</span></div>
+      <div class="stat"><span class="stat-label">🚀 สะสม</span><span id="userTotal" class="stat-value">0</span></div>
+    </div>
+  </header>
+
+  <main class="panel">
+    <nav class="tabs">
+      <button class="mns-tab active" data-tab="map" onclick="switchTab('map')">🗺️ MAP</button>
+      <button class="mns-tab" data-tab="plan" onclick="switchTab('plan')">📋 PLAN</button>
+      <button class="mns-tab" data-tab="navi" onclick="switchTab('navi')">🧭 NAVI</button>
+      <button class="mns-tab" data-tab="broker" onclick="switchTab('broker')">🔗 โบรก</button>
+      <button class="mns-tab" data-tab="chat" onclick="switchTab('chat')">💬 แชท</button>
+    </nav>
+
+    <section class="content">
+      <!-- MAP TAB -->
+      <div id="tab-map" class="tab-page">
+        <div class="section">
+          <div class="section-title">⚡ ราคาสปอต XAUUSD ตลาดสด</div>
+          <div class="price-box">
+            <button id="apiBtn" class="main-btn" onclick="fetchRealPrice()">⚡ ดึงราคา XAUUSD ปัจจุบันทันที</button>
+            <div style="display:flex; gap:8px; margin-top:8px; align-items:center;">
+              <div style="flex:1;"><div class="field-label">⚙️ ปรับจูนราคาชดเชย (Offset ±$)</div><input id="inpOffset" type="number" step="0.01" value="0.00" class="input" oninput="saveOffset()" placeholder="+0.00"></div>
+            </div>
+            <div id="apiStatus" class="api-status ok">🟢 พร้อมเชื่อมต่อข้อมูล XAUUSD</div>
+            <div style="display:flex; align-items:center; justify-content:space-between; gap:8px; margin-top:8px; flex-wrap:wrap;">
+              <button id="autoBtn" class="small-btn" onclick="autoRefreshPrice()">🔄 อัตโนมัติ 60 วินาที</button>
+              <span id="lastUpdate" style="color:#64748b; font-size:9px;">ยังไม่เคยดึงราคา</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="section">
+          <div class="section-title">📅 Market Sessions</div>
+          <div class="result">
+            <div class="event"><span>🟢 Sydney / Tokyo</span><span class="event-time">07:00</span></div>
+            <div class="event"><span>🟠 London Open</span><span class="event-time">15:00</span></div>
+            <div class="event"><span>🔴 New York Open</span><span class="event-time">20:00</span></div>
+          </div>
+        </div>
+
+        <div class="section">
+          <div class="section-title">📊 โครงสร้างตลาด XAUUSD</div>
+          <div class="grid-3">
+            <div><div class="field-label">🔺 Swing High</div><input id="inpHigh" type="number" step="any" inputmode="decimal" class="input" placeholder="0.00"></div>
+            <div><div class="field-label">🔻 Swing Low</div><input id="inpLow" type="number" step="any" inputmode="decimal" class="input" placeholder="0.00"></div>
+            <div><div class="field-label">⭐ ราคาปัจจุบัน</div><input id="inpPrice" type="number" step="any" inputmode="decimal" class="input price" placeholder="0.00"></div>
+          </div>
+        </div>
+
+        <div class="section">
+          <div class="section-title">⚙️ ตั้งค่า MNS</div>
+          <div class="grid-3">
+            <div><div class="field-label">Spread ($)</div><input id="inpSpread" type="number" step="0.01" value="0.45" class="input"></div>
+            <div><div class="field-label">Trend %</div><input id="inpTrend" type="number" value="65" min="0" max="100" class="input"></div>
+            <div><div class="field-label">Direction</div><select id="inpDir" class="input"><option value="UP">UP — Bullish</option><option value="DOWN">DOWN — Bearish</option><option value="NONE">NONE — Sideway</option></select></div>
+          </div>
+        </div>
+
+        <div class="section">
+          <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:6px;">
+            <div class="section-title" style="margin:0">🧠 คุณภาพ MAP</div>
+            <div id="mapScore" style="color:#fbbf24; font-family:'JetBrains Mono',monospace; font-size:19px; font-weight:900;">0%</div>
+          </div>
+        </div>
+
+        <div id="mapResult" class="result" style="margin-bottom:10px;">
+          🗺️ Market Map — กรุณาดึงราคา XAUUSD และกรอกโครงสร้าง
+        </div>
+        <button class="main-btn blue" onclick="buildMap()">🗺️ วิเคราะห์โครงสร้าง MAP SMC</button>
+      </div>
+
+      <!-- PLAN TAB -->
+      <div id="tab-plan" class="tab-page hidden-tab">
+        <div class="section-title">📋 MNS PLAN — XAUUSD Entry / SL / TP</div>
+        <div id="planResult" class="result">⏳ รอการวิเคราะห์จาก MAP</div>
+      </div>
+
+      <!-- NAVI TAB -->
+      <div id="tab-navi" class="tab-page hidden-tab">
+        <div class="section-title">🧭 NAVI — คำแนะนำ XAUUSD · อายุแผน <span id="age">0</span> นาที</div>
+        <div id="naviResult" class="result">⏳ รอการวิเคราะห์จาก MAP</div>
+      </div>
+
+      <!-- BROKER TAB -->
+      <div id="tab-broker" class="tab-page hidden-tab">
+        <div class="section-title">🔗 โบรกเกอร์ / เครื่องมือ</div>
+        <a href="https://i.miactivitys.com/index-th-TH.html?c=FT9GU&na=TH" target="_blank" rel="noopener noreferrer" class="broker">🥇 Mitrade <small>เปิดบัญชี / Mobile Trading XAUUSD</small></a>
+        <a href="https://one.exnessonelink.com/a/80dmb5wr12" target="_blank" rel="noopener noreferrer" class="broker">📊 Exness <small>MT4 / MT5 XAUUSD</small></a>
+        <a href="https://www.tradingview.com/symbols/XAUUSD/" target="_blank" rel="noopener noreferrer" class="broker">📈 TradingView XAUUSD <small>เปิดกราฟเต็มรูปแบบ</small></a>
+      </div>
+
+      <!-- CHAT TAB -->
+      <div id="tab-chat" class="tab-page hidden-tab">
+        <div class="section-title">💬 MNS XAUUSD Community Chat</div>
+        <div class="chat">
+          <div id="chatMessages" class="chat-messages"></div>
+          <div class="chat-input-row">
+            <input id="chatInput" type="text" maxlength="500" autocomplete="off" placeholder="พิมพ์ข้อความวิเคราะห์ XAUUSD...">
+            <button onclick="sendChat()">ส่ง</button>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <section class="chart">
+    <div class="tradingview-widget-container">
+      <div id="tradingview_chart" style="width:100%;height:100%;"></div>
+      <script type="text/javascript" src="https://s3.tradingview.com/tv.js"></script>
+      <script type="text/javascript">
+        new TradingView.widget({
+          "autosize": true,
+          "symbol": "OANDA:XAUUSD",
+          "interval": "5",
+          "timezone": "Asia/Bangkok",
+          "theme": "dark",
+          "style": "1",
+          "locale": "th",
+          "toolbar_bg": "#131722",
+          "enable_publishing": false,
+          "allow_symbol_change": true,
+          "container_id": "tradingview_chart",
+          "hide_side_toolbar": false,
+          "details": true,
+          "hotlist": false,
+          "calendar": true,
+          "studies": [
+            "MASimple@tv-basicstudies"
+          ]
+        });
+      </script>
+    </div>
+  </section>
+</div>
+
+<script>
+/* =========================================================
+   MNS PRO V2.5 — XAUUSD RELIABLE ENGINE WITH OFFSET
+   ========================================================= */
+
+let planTime = null;
+let autoTimer = null;
+let lastMarketData = null;
+
+const STORAGE_KEYS = {
+  TODAY: 'mns_today',
+  TOTAL: 'mns_total',
+  DATE: 'mns_date',
+  MESSAGES: 'mns_chat',
+  LAST_PRICE: 'mns_last_price',
+  LAST_DATA: 'mns_last_data',
+  OFFSET: 'mns_price_offset'
+};
+
+function round(v, d = 2) {
+  const n = Number(v);
+  if (!Number.isFinite(n)) return 0;
+  const p = 10 ** d;
+  return Math.round(n * p) / p;
+}
+
+function validPrice(v) {
+  const n = Number(v);
+  return Number.isFinite(n) && n > 0;
+}
+
+function el(id) {
+  return document.getElementById(id);
+}
+
+function setStatus(text, type = 'ok') {
+  const box = el('apiStatus');
+  if (!box) return;
+  box.className = 'api-status ' + type;
+  box.innerHTML = text;
+}
+
+function setSystem(text, ok = true) {
+  const s = el('systemStatus');
+  if (!s) return;
+  s.textContent = text;
+  s.style.color = ok ? '#86efac' : '#fca5a5';
+}
+
+function getOffset() {
+  const val = parseFloat(el('inpOffset')?.value);
+  return Number.isFinite(val) ? val : 0;
+}
+
+function saveOffset() {
+  try {
+    localStorage.setItem(STORAGE_KEYS.OFFSET, String(el('inpOffset')?.value || 0));
+    if (lastMarketData) applyMarketData(lastMarketData);
+  } catch (e) {}
+}
+
+function loadOffset() {
+  try {
+    const saved = localStorage.getItem(STORAGE_KEYS.OFFSET);
+    if (saved !== null && el('inpOffset')) {
+      el('inpOffset').value = saved;
+    }
+  } catch (e) {}
+}
+
+function initUserStats() {
+  try {
+    const today = new Date().toDateString();
+    const savedDate = localStorage.getItem(STORAGE_KEYS.DATE);
+    let todayCount = parseInt(localStorage.getItem(STORAGE_KEYS.TODAY) || '0', 10);
+    let totalCount = parseInt(localStorage.getItem(STORAGE_KEYS.TOTAL) || '0', 10);
+
+    if (savedDate !== today) {
+      todayCount = 0;
+      localStorage.setItem(STORAGE_KEYS.DATE, today);
+      localStorage.setItem(STORAGE_KEYS.TODAY, '0');
+    }
+
+    if (!sessionStorage.getItem('mns_visited')) {
+      todayCount++;
+      totalCount++;
+      sessionStorage.setItem('mns_visited', '1');
+      localStorage.setItem(STORAGE_KEYS.TODAY, String(todayCount));
+      localStorage.setItem(STORAGE_KEYS.TOTAL, String(totalCount));
+    }
+
+    if (el('userToday')) el('userToday').textContent = todayCount;
+    if (el('userTotal')) el('userTotal').textContent = totalCount;
+  } catch (e) {}
+}
+
+async function shareApp() {
+  const url = window.location.href;
+  try {
+    if (navigator.share) {
+      await navigator.share({ title: 'MNS Pro XAUUSD', text: '🧭 MNS Pro — XAUUSD SMC Trade Navigator', url });
+    } else if (navigator.clipboard) {
+      await navigator.clipboard.writeText(url);
+      alert('✅ คัดลอกลิงก์แล้ว');
+    } else {
+      prompt('คัดลอกลิงก์นี้', url);
+    }
+  } catch (e) {}
+}
+
+async function fetchRealPrice() {
+  const btn = el('apiBtn');
+  if (btn) {
+    btn.disabled = true;
+    btn.textContent = '⏳ กำลังดึงราคา XAUUSD...';
+  }
+  setSystem('⏳ กำลังเชื่อมต่อตลาด XAUUSD...', true);
+  setStatus('⏳ กำลังดึงข้อมูล Spot ทองคำ...', 'updating');
+
+  try {
+    const response = await fetch('https://api.binance.com/api/v3/ticker/24hr?symbol=PAXGUSDT', { method: 'GET', cache: 'no-store' });
+    if (!response.ok) throw new Error('HTTP error ' + response.status);
+    const json = await response.json();
+    let price = Number(json.lastPrice);
+
+    if (!validPrice(price)) throw new Error('ไม่พบข้อมูลราคา');
+
+    const data = {
+      price,
+      open: Number(json.openPrice || price),
+      high: Number(json.highPrice || price),
+      low: Number(json.lowPrice || price),
+      source: 'Binance Spot + Offset',
+      time: new Date().toISOString()
+    };
+
+    lastMarketData = data;
+    saveMarketData(data);
+    applyMarketData(data);
+    setStatus('✅ XAUUSD: ' + formatPrice(data.price + getOffset()) + ' USD (จูนแล้ว)', 'ok');
+    setSystem('🟢 ราคาสปอตพร้อมใช้งาน', true);
+    updateLastTime(data.time);
+
+    if (btn) {
+      btn.disabled = false;
+      btn.text
