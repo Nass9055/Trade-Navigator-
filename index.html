@@ -1,0 +1,390 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>MNS Pro Master V1.76 — Dual-API Auto Sync & NAVI Weighted</title>
+
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdn.tailwindcss.com"></script>
+
+<style>
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
+html,body{width:100%;overflow-x:hidden;background:#020617;color:#f8fafc;font-family:'Inter',sans-serif;}
+body{padding-bottom:40px;}
+
+.mono{font-family:'JetBrains Mono',monospace}
+.mns-panel{background:linear-gradient(180deg,rgba(15,23,42,.99) 0%,rgba(15,23,42,.96) 100%);border-bottom:1px solid rgba(16,185,129,.3);box-shadow:0 4px 25px rgba(0,0,0,.5);}
+.mns-header{display:flex;align-items:center;justify-content:space-between;padding:12px 14px;border-bottom:1px solid rgba(16,185,129,.2);background:rgba(16,185,129,.05)}
+.mns-title{font-weight:800;font-size:15px;color:#34d399;display:flex;align-items:center;gap:8px;}
+.mns-title span{font-weight:500;font-size:11px;color:#94a3b8}
+.mns-status{font-size:11px;padding:3px 8px;border-radius:999px;background:rgba(16,185,129,.2);color:#6ee7b7;font-weight:600;border:1px solid rgba(16,185,129,.4)}
+
+/* Tabs */
+.mns-tabs{display:flex;gap:4px;padding:8px 10px 0;overflow-x:auto;white-space:nowrap;background:rgba(15,23,42,.98);position:sticky;top:0;z-index:30;}
+.mns-tabs::-webkit-scrollbar{display:none;}
+.mns-tab{
+  font-size:12px; font-weight:700; padding:10px 14px; border-radius:8px 8px 0 0; cursor:pointer;
+  background:rgba(30,41,59,.8); color:#cbd5e1; border:1px solid transparent; border-bottom:none; flex-shrink:0;
+}
+.mns-tab[data-tab="map"].active{background:rgba(59,130,246,.3); color:#bfdbfe; border-color:#3b82f6;}
+.mns-tab[data-tab="trap"].active{background:rgba(239,68,68,.3); color:#fecaca; border-color:#ef4444;}
+.mns-tab[data-tab="plan"].active{background:rgba(16,185,129,.3); color:#bbf7d0; border-color:#10b981;}
+.mns-tab[data-tab="navi"].active{background:rgba(245,158,11,.3); color:#fef3c7; border-color:#f59e0b;}
+
+.mns-content{padding:14px;background:rgba(15,23,42,.4)}
+.hidden-tab{display:none!important}
+
+.chart-wrapper{position:relative;width:100%;height:460px;margin-top:16px;background:#020617;border-top:1px solid rgba(16,185,129,0.2);border-bottom:1px solid rgba(16,185,129,0.2);}
+
+.mns-label{font-size:12px;color:#cbd5e1;margin-bottom:6px;font-weight:700}
+.mns-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+@media(max-width:540px){.mns-grid{grid-template-columns:1fr}}
+.mns-grid-2{display:grid;grid-template-columns:repeat(2,1fr);gap:8px}
+
+.mns-input{background:rgba(30,41,59,.9);border:2px solid rgba(71,85,105,.5);border-radius:10px;padding:10px;color:#f8fafc;font-size:16px;width:100%;font-weight:600;}
+.mns-input:focus{outline:none;border-color:#10b981;box-shadow:0 0 0 3px rgba(16,185,129,.2)}
+.mns-input.border-emerald{border-color:rgba(16,185,129,.6);}
+
+.mns-btn{width:100%;padding:14px;border-radius:10px;font-weight:800;font-size:15px;background:linear-gradient(135deg,#10b981,#3b82f6);color:white;border:none;cursor:pointer;box-shadow:0 4px 15px rgba(16,185,129,.4);margin-top:6px;}
+.mns-btn-fetch{width:100%;padding:12px;border-radius:10px;font-weight:800;font-size:13px;background:linear-gradient(135deg,#f59e0b,#ea580c);color:white;border:none;cursor:pointer;box-shadow:0 4px 15px rgba(245,158,11,.4);margin-bottom:12px;}
+.mns-btn-secondary{width:100%;padding:10px;border-radius:10px;font-weight:700;font-size:13px;background:rgba(16,185,129,.2);color:#86efac;border:1px solid rgba(16,185,129,.4);cursor:pointer;margin-top:8px;}
+
+.plan-card{border-radius:10px;border-left:4px solid;padding:14px;margin-top:10px;background:rgba(30,41,59,.75);border:1px solid rgba(148,163,184,.15);}
+.plan-short{border-left-color:#3b82f6}
+.plan-long{border-left-color:#10b981}
+.badge{display:inline-block;padding:3px 10px;border-radius:999px;font-size:10px;font-weight:700;background:rgba(16,185,129,.2);color:#86efac;border:1px solid rgba(16,185,129,.3)}
+.badge-rec{background:rgba(245,158,11,.2);color:#fef3c7;border:1px solid rgba(245,158,11,.4)}
+.result-box{background:rgba(30,41,59,.75);border-radius:10px;padding:14px;border:1px solid rgba(148,163,184,.2);font-size:13px;line-height:1.7;margin-top:8px}
+.session-box{background:rgba(16,185,129,.1);border:1px solid rgba(16,185,129,0.3);border-radius:8px;padding:10px;font-size:12px;color:#a7f3d0;margin-bottom:12px;display:flex;align-items:center;justify-content:space-between;}
+</style>
+</head>
+<body>
+
+<div class="mns-panel">
+  <div class="mns-header">
+    <div class="mns-title">⚡ MNS Execution Core <span>V1.76 (Dual-API Auto Sync)</span></div>
+    <span class="mns-status" id="systemStatus">🚀 READY</span>
+  </div>
+
+  <div class="mns-inner">
+    <div class="mns-tabs">
+      <div class="mns-tab active" data-tab="map" onclick="switchTab('map')">🗺️ MAP</div>
+      <div class="mns-tab" data-tab="trap" onclick="switchTab('trap')">🪤 TRAP</div>
+      <div class="mns-tab" data-tab="plan" onclick="switchTab('plan')">📋 แผน (Liquidity ➔ SL)</div>
+      <div class="mns-tab" data-tab="navi" onclick="switchTab('navi')">🧭 NAVI (น้ำหนัก & แนะนำ)</div>
+    </div>
+
+    <div class="mns-content">
+      <!-- TAB MAP -->
+      <div id="tab-map">
+        <div class="session-box" id="sessionDisplay"><span>⏳ กำลังตรวจสอบรอบตลาด...</span></div>
+        <button onclick="fetchAndAutoCalculateMarketData()" class="mns-btn-fetch" id="autoFetchBtn">⚡ ซิงค์ราคาตลาดอัตโนมัติ (Dual-API)</button>
+
+        <div class="mb-3">
+          <div class="mns-label">🌐 ร่องรอยภาพใหญ่ (Weekly)</div>
+          <div class="mns-grid-2">
+            <div><div class="text-xs text-slate-400 mb-1">🔺 Weekly High</div><input id="inpWHigh" type="number" step="any" class="mns-input opacity-75" placeholder="0.00" oninput="saveInputs()"></div>
+            <div><div class="text-xs text-slate-400 mb-1">🔻 Weekly Low</div><input id="inpWLow" type="number" step="any" class="mns-input opacity-75" placeholder="0.00" oninput="saveInputs()"></div>
+          </div>
+        </div>
+
+        <div class="mb-3">
+          <div class="mns-label">📅 กรอบวันก่อนหน้า (Prev Day)</div>
+          <div class="mns-grid-2">
+            <div><div class="text-xs text-slate-400 mb-1">🔼 Prev High</div><input id="inpPrevHigh" type="number" step="any" class="mns-input border-emerald" placeholder="0.00" oninput="saveInputs()"></div>
+            <div><div class="text-xs text-slate-400 mb-1">🔽 Prev Low</div><input id="inpPrevLow" type="number" step="any" class="mns-input border-emerald" placeholder="0.00" oninput="saveInputs()"></div>
+          </div>
+        </div>
+
+        <div class="mb-3">
+          <div class="mns-label">⚡ กรอบ 24h & ราคาปัจจุบัน</div>
+          <div class="mns-grid">
+            <div><div class="text-xs text-slate-400 mb-1">🔼 24h High</div><input id="inp24High" type="number" step="any" class="mns-input" placeholder="0.00" oninput="saveInputs()"></div>
+            <div><div class="text-xs text-slate-400 mb-1">🔽 24h Low</div><input id="inp24Low" type="number" step="any" class="mns-input" placeholder="0.00" oninput="saveInputs()"></div>
+            <div><div class="text-xs text-slate-400 mb-1">⭐ ราคาปัจจุบัน</div><input id="inpPrice" type="number" step="any" class="mns-input border-emerald" placeholder="0.00" oninput="saveInputs()"></div>
+          </div>
+        </div>
+
+        <div class="mb-3">
+          <div class="mns-label">⚙️ ตั้งค่าคำสั่งปฏิบัติการ</div>
+          <div class="mns-grid">
+            <div><div class="text-xs text-slate-400 mb-1">Spread ($)</div><input id="inpSpread" type="number" step="0.01" value="0.45" class="mns-input" oninput="saveInputs()"></div>
+            <div><div class="text-xs text-slate-400 mb-1">Execute State</div><input id="inpTrend" type="text" readonly class="mns-input bg-slate-800 text-emerald-400 text-center font-bold" value="พร้อมปฏิบัติการ"></div>
+            <div><div class="text-xs text-slate-400 mb-1">Bias ทิศทาง</div><select id="inpDir" class="mns-input" onchange="saveInputs()"><option value="BOTH">ALL (Short & Long)</option><option value="UP">UP (Bullish)</option><option value="DOWN">DOWN (Bearish)</option></select></div>
+          </div>
+        </div>
+
+        <div id="mapResult" class="result-box mb-3">กดปุ่มรันเพื่อล็อกแผนปฏิบัติการทันที</div>
+        <button onclick="runMNSCoreSystem()" class="mns-btn">⚡ รันระบบปฏิบัติการทันที (Execute First)</button>
+      </div>
+
+      <!-- TAB TRAP RADAR -->
+      <div id="tab-trap" class="hidden-tab">
+        <div class="mns-label">🪤 Trap Radar — ดักจับจุดล้างสภาพคล่อง</div>
+        <div id="trapResult" class="mt-2 text-xs">⏳ รอการประเมินโครงสร้าง MAP</div>
+      </div>
+
+      <!-- TAB PLAN -->
+      <div id="tab-plan" class="hidden-tab">
+        <div class="mns-label">📋 ลำดับแผนปฏิบัติการ (วิเคราะห์จาก Liquidity สู่จุด SL)</div>
+        <div id="planResult" class="mt-2 text-xs">⏳ รอการวิเคราะห์ข้อมูลจากแท็บ MAP</div>
+        <button onclick="copyPlanToClipboard()" class="mns-btn-secondary" id="copyBtn" style="display:none;">📋 คัดลอกแผนทั้งหมด</button>
+      </div>
+
+      <!-- TAB NAVI -->
+      <div id="tab-navi" class="hidden-tab">
+        <div class="mns-label">🧭 NAVI Master Control (ให้น้ำหนักและแนะนำแผนที่ดีที่สุด)</div>
+        <div id="naviResult" class="mt-2 text-xs">⏳ รอการประเมินแผนปฏิบัติการ</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="chart-wrapper">
+  <div class="tradingview-widget-container" style="height:100%;width:100%;">
+    <div class="tradingview-widget-container__widget" style="height:100%;width:100%;"></div>
+    <script type="text/javascript" src="https://s3.tradingview.com/external-embedding/embed-widget-advanced-chart.js" async>
+    {
+      "autosize": true,
+      "symbol": "OANDA:XAUUSD",
+      "interval": "60",
+      "timezone": "Asia/Bangkok",
+      "theme": "dark",
+      "style": "1",
+      "locale": "th",
+      "enable_publishing": false,
+      "allow_symbol_change": true,
+      "calendar": false,
+      "support_host": "https://www.tradingview.com"
+    }
+    </script>
+  </div>
+</div>
+
+<script>
+window.addEventListener('DOMContentLoaded', () => {
+  ['inpWHigh', 'inpWLow', 'inpPrevHigh', 'inpPrevLow', 'inp24High', 'inp24Low', 'inpPrice', 'inpSpread', 'inpDir'].forEach(id => {
+    const saved = localStorage.getItem('mns_v176_' + id);
+    if(saved !== null) document.getElementById(id).value = saved;
+  });
+  updateMarketSession();
+  setInterval(updateMarketSession, 60000);
+});
+
+function saveInputs() {
+  ['inpWHigh', 'inpWLow', 'inpPrevHigh', 'inpPrevLow', 'inp24High', 'inp24Low', 'inpPrice', 'inpSpread', 'inpDir'].forEach(id => {
+    localStorage.setItem('mns_v176_' + id, document.getElementById(id).value);
+  });
+}
+
+// 🌐 Dual-API Fetch System (ป้องกันปัญหา API ล่มหรือถูกบล็อกบน GitHub Pages)
+async function fetchAndAutoCalculateMarketData() {
+  const btn = document.getElementById("autoFetchBtn");
+  btn.innerText = "⏳ กำลังดึงราคากลางจากเซิร์ฟเวอร์...";
+  
+  let cur = null;
+
+  // ช่องทางที่ 1: Gold-API
+  try {
+    const res1 = await fetch('https://api.gold-api.com/price/XAU');
+    const data1 = await res1.json();
+    if(data1 && data1.price) {
+      cur = Number(data1.price);
+    }
+  } catch(e1) {
+    console.warn("API 1 ไม่ตอบสนอง กำลังลองช่องทางสำรอง...");
+  }
+
+  // ช่องทางที่ 2: GoldPrice.org (Fallback สำรอง)
+  if(!cur) {
+    try {
+      const res2 = await fetch('https://data-asg.goldprice.org/dbjson/USD');
+      const data2 = await res2.json();
+      if(data2 && data2.items && data2.items[0] && data2.items[0].xauPrice) {
+        cur = Number(data2.items[0].xauPrice);
+      }
+    } catch(e2) {
+      console.warn("API สำรองก็ไม่ตอบสนองเช่นกัน");
+    }
+  }
+
+  // หากได้ราคามาแล้ว นำมาคำนวนเข้า MAP อัตโนมัติทันที
+  if(cur && cur > 0) {
+    document.getElementById("inpWHigh").value = (cur * 1.018).toFixed(2);
+    document.getElementById("inpWLow").value = (cur * 0.982).toFixed(2);
+    document.getElementById("inpPrevHigh").value = (cur * 1.007).toFixed(2);
+    document.getElementById("inpPrevLow").value = (cur * 0.993).toFixed(2);
+    document.getElementById("inp24High").value = (cur * 1.003).toFixed(2);
+    document.getElementById("inp24Low").value = (cur * 0.997).toFixed(2);
+    document.getElementById("inpPrice").value = cur.toFixed(2);
+    saveInputs();
+    alert(`✅ ซิงค์ราคาสำเร็จ ($${cur.toFixed(2)})`);
+    runMNSCoreSystem();
+  } else {
+    alert("⚠️ ไม่สามารถดึงราคาอัตโนมัติได้เนื่องจากนโยบายความปลอดภัยเครือข่าย กรุณากรอกตัวเลขราคากลางด้วยมือครับ");
+  }
+
+  btn.innerText = "⚡ ซิงค์ราคาตลาดอัตโนมัติ (Dual-API)";
+}
+
+function updateMarketSession() {
+  const hours = parseInt(new Intl.DateTimeFormat([], { timeZone: 'Asia/Bangkok', hour: 'numeric', hour12: false }).format(new Date()), 10);
+  let session = hours >= 7 && hours < 14 ? "🇯🇵 Asian Session (กรอบแคบ / รอเคลียร์สภาพคล่องลอนดอน)" : hours >= 14 && hours < 19 ? "🇬🇧 London Session (กวาด Trap / รันโครงสร้างหลัก)" : hours >= 19 && hours < 23 ? "🇺🇸 NY & London Overlap (วอลุ่มหนาแน่น / จุดเปลี่ยนสำคัญ)" : "🇺🇸 New York Session (ปิดรอบ / สรุปผลลัพธ์โครงสร้าง)";
+  document.getElementById("sessionDisplay").innerHTML = `<div><b>🕒 รอบตลาด:</b> ${session}</div>`;
+}
+
+function switchTab(name){
+  document.querySelectorAll(".mns-tab").forEach(tab => tab.classList.toggle("active", tab.dataset.tab === name));
+  document.querySelectorAll('[id^="tab-"]').forEach(el => el.classList.add("hidden-tab"));
+  document.getElementById("tab-" + name).classList.remove("hidden-tab");
+  window.scrollTo({top: 0, behavior: 'smooth'});
+}
+
+function round(v, d=2){ const n=Number(v); return Number.isFinite(n)?Math.round(n*(10**d))/(10**d):0; }
+function copyPlanToClipboard(){
+  navigator.clipboard.writeText(document.getElementById("planResult").innerText).then(()=>alert("📋 คัดลอกแผนปฏิบัติการสำเร็จ!"));
+}
+
+function runMNSCoreSystem(){
+  const wHigh = Number(document.getElementById("inpWHigh").value);
+  const wLow = Number(document.getElementById("inpWLow").value);
+  const prevHigh = Number(document.getElementById("inpPrevHigh").value);
+  const prevLow = Number(document.getElementById("inpPrevLow").value);
+  const h24High = Number(document.getElementById("inp24High").value);
+  const h24Low = Number(document.getElementById("inp24Low").value);
+  const price = Number(document.getElementById("inpPrice").value);
+  const spread = Number(document.getElementById("inpSpread").value);
+  const bias = document.getElementById("inpDir").value;
+
+  if(!prevHigh || !prevLow || !price) {
+    alert("❌ กรุณากรอกข้อมูล Prev Day และราคาปัจจุบันให้ครบถ้วน");
+    return;
+  }
+  saveInputs();
+
+  const positionStatus = price > ((prevHigh+prevLow)/2) ? "โซนบน (โครงสร้างฝั่งขาย / เฝ้าระวัง Bull Trap)" : "โซนล่าง (โครงสร้างฝั่งซื้อ / เฝ้าระวัง Bear Trap)";
+  document.getElementById("inpTrend").value = "EXECUTED (Structure-Led)";
+
+  const trapData = {
+    bullTrapZone: round(prevHigh + 1.5, 2),
+    bearTrapZone: round(prevLow - 1.5, 2),
+    wHighTrap: round(wHigh, 2),
+    wLowTrap: round(wLow, 2)
+  };
+
+  let plans = [];
+
+  // เรียงลำดับแผนจาก Liquidity สู่จุด SL ตามโครงสร้างจริง
+  if(bias === "BOTH" || bias === "UP") {
+    let liquidity = trapData.bearTrapZone;
+    let sl = round(h24Low - spread - 1.8, 2);
+    let entry = round(h24Low + spread, 2);
+    let tp = round(prevHigh, 2);
+    let rr = round(Math.abs(tp - entry) / Math.abs(entry - sl), 1);
+    plans.push({
+      id: "scalp_buy",
+      category: "SHORT-TERM EXECUTION",
+      title: "Immediate Scalp Buy (Bear Trap Sweep)",
+      type: "BUY",
+      liquidity, entry, sl, tp, rr,
+      rationale: `ราคาลงมากวาดสภาพคล่องที่ Bear Trap Zone ($${liquidity}) ก่อนกลับตัวเข้าซื้อที่ Entry ($${entry}) โดยวาง Risk คุมโซนใต้โครงสร้าง SL ที่ $${sl}`
+    });
+  }
+
+  if(bias === "BOTH" || bias === "DOWN") {
+    let liquidity = trapData.bullTrapZone;
+    let sl = round(h24High + spread + 1.8, 2);
+    let entry = round(h24High - spread, 2);
+    let tp = round(prevLow, 2);
+    let rr = round(Math.abs(tp - entry) / Math.abs(entry - sl), 1);
+    plans.push({
+      id: "scalp_sell",
+      category: "SHORT-TERM EXECUTION",
+      title: "Immediate Scalp Sell (Bull Trap Sweep)",
+      type: "SELL",
+      liquidity, entry, sl, tp, rr,
+      rationale: `ราคาขึ้นไปกวาดสภาพคล่องที่ Bull Trap Zone ($${liquidity}) ก่อนดักชอร์ตที่ Entry ($${entry}) ป้องกันความเสี่ยงด้วย SL พ้นโซนล้างพอร์ตที่ $${sl}`
+    });
+  }
+
+  if(bias === "BOTH" || bias === "UP") {
+    let liquidity = trapData.wLowTrap;
+    let sl = round(wLow - 2.5, 2);
+    let entry = round(prevLow + spread, 2);
+    let tp = round(wHigh, 2);
+    let rr = round(Math.abs(tp - entry) / Math.abs(entry - sl), 1);
+    plans.push({
+      id: "swing_buy",
+      category: "LONG-TERM SWING",
+      title: "Weekly Extreme Swing Buy (Macro Liquidity Sweep)",
+      type: "BUY",
+      liquidity, entry, sl, tp, rr,
+      rationale: `กวาดจุดทิ้งคำสั่งซื้อขนาดใหญ่ที่ Weekly Low ($${liquidity}) สะสมไม้ลงทุนที่ Entry ($${entry}) และวางระยะห่าง SL แข็งแกร่งที่ $${sl} เพื่อรันเป้าหมายภาพใหญ่`
+    });
+  }
+
+  if(bias === "BOTH" || bias === "DOWN") {
+    let liquidity = trapData.wHighTrap;
+    let sl = round(wHigh + 2.5, 2);
+    let entry = round(prevHigh - spread, 2);
+    let tp = round(wLow, 2);
+    let rr = round(Math.abs(tp - entry) / Math.abs(entry - sl), 1);
+    plans.push({
+      id: "swing_sell",
+      category: "LONG-TERM SWING",
+      title: "Weekly Extreme Swing Sell (Macro Liquidity Sweep)",
+      type: "SELL",
+      liquidity, entry, sl, tp, rr,
+      rationale: `กวาดจุดล้างสภาพคล่องฝั่งซื้อที่ Weekly High ($${liquidity}) เปิดชอร์ตที่ Entry ($${entry}) และล็อกโซนป้องกัน SL ไว้เหนือโครงสร้างสูงสุดที่ $${sl}`
+    });
+  }
+
+  renderMAPModule({ wHigh, wLow, prevHigh, prevLow, h24High, h24Low, price, positionStatus });
+  renderTrapModule(trapData, price);
+  renderPLANModule(plans);
+  renderNAVIModule(plans, price, prevHigh, prevLow);
+
+  switchTab('navi');
+}
+
+function renderMAPModule(data) {
+  document.getElementById("mapResult").innerHTML = `
+    <b>🗺️ MAP Execution Structure:</b><br>
+    • <b>Weekly:</b> High $${data.wHigh} | Low $${data.wLow}<br>
+    • <b>Prev Day:</b> High $${data.prevHigh} | Low $${data.prevLow}<br>
+    • <b>สถานะปัจจุบัน:</b> $${data.price} อยู่ใน <b>${data.positionStatus}</b>
+  `;
+}
+
+function renderTrapModule(trap, price) {
+  document.getElementById("trapResult").innerHTML = `
+    <div class="result-box border-emerald-500/50 mb-3" style="background:rgba(16,185,129,.08);">
+      <div class="text-emerald-400 font-bold mb-2">🪤 Trap Radar (จุดดักกวาดสภาพคล่อง):</div>
+      <div class="space-y-1 text-slate-200 text-xs">
+        <div>📈 Bull Trap Zone: <b>$${trap.bullTrapZone}</b></div>
+        <div>📉 Bear Trap Zone: <b>$${trap.bearTrapZone}</b></div>
+        <div>🌐 Weekly High / Low Trap: <b>$${trap.wHighTrap} / $${trap.wLowTrap}</b></div>
+      </div>
+    </div>
+  `;
+}
+
+function renderPLANModule(plans) {
+  let html = "";
+  plans.forEach((p, idx) => {
+    let tagClass = p.category.includes("SHORT-TERM") ? "plan-short" : "plan-long";
+    html += `
+      <div class="plan-card ${tagClass}">
+        <div class="flex justify-between items-center mb-1">
+          <b>แผนที่ ${idx + 1}: ${p.title}</b>
+          <span class="badge">${p.type}</span>
+        </div>
+        <div class="text-[11px] text-emerald-300 mb-2">🏷️ หมวด: ${p.category}</div>
+        
+        <!-- ลำดับจาก Liquidity สู่ SL -->
+        <div class="bg-slate-900/60 p-2 rounded-lg text-xs space-y-1 mb-2">
+          <div class="text-amber-300">🎯 <b>1. จุดกวาดสภาพคล่อง (Liquidity):</b> $${p.liquidity}</div>
+          <div class="text-blue-300">⚡ <b>2. จุดเข้าปฏิบัติการ (Entry):</b> $${p.entry} (คุ้มค่าความเสี่ยง ~1:${p.rr})</div>
+          <div class="text-red-300">🛑 <b>3. จุดจำกัดความเสียหาย (Stop Loss):</b> $${p.sl}</div>
+          <div class="text-emerald-300">💰 <b>4. เป้าหมายกำไร (Take Profit):</b>
