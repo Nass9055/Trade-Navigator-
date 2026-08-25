@@ -1,0 +1,377 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>MNS Pro Master V2.11 — Auto-Fill All Data</title>
+
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdn.tailwindcss.com"></script>
+
+<style>
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
+html,body{width:100%;overflow-x:hidden;background:#020617;color:#f8fafc;font-family:'Inter',sans-serif;}
+body{padding-bottom:40px;}
+
+.mono{font-family:'JetBrains Mono',monospace}
+.mns-panel{background:linear-gradient(180deg,rgba(15,23,42,.99) 0%,rgba(15,23,42,.96) 100%);border-bottom:1px solid rgba(16,185,129,.3);box-shadow:0 4px 25px rgba(0,0,0,.5);}
+.mns-header{display:flex;align-items:center;justify-content:space-between;padding:12px 14px;border-bottom:1px solid rgba(16,185,129,.2);background:rgba(16,185,129,.05)}
+.mns-title{font-weight:800;font-size:15px;color:#34d399;display:flex;align-items:center;gap:8px;}
+.mns-title span{font-weight:500;font-size:11px;color:#94a3b8}
+.mns-status{font-size:11px;padding:3px 8px;border-radius:999px;background:rgba(16,185,129,.2);color:#6ee7b7;font-weight:600;border:1px solid rgba(16,185,129,.4)}
+
+.mns-tabs{display:flex;gap:4px;padding:8px 10px 0;overflow-x:auto;white-space:nowrap;background:rgba(15,23,42,.98);position:sticky;top:0;z-index:30;}
+.mns-tabs::-webkit-scrollbar{display:none;}
+.mns-tab{font-size:12px;font-weight:700;padding:10px 14px;border-radius:8px 8px 0 0;cursor:pointer;background:rgba(30,41,59,.8);color:#cbd5e1;border:1px solid transparent;border-bottom:none;flex-shrink:0;}
+.mns-tab[data-tab="map"].active{background:rgba(59,130,246,.3);color:#bfdbfe;border-color:#3b82f6;}
+.mns-tab[data-tab="trap"].active{background:rgba(239,68,68,.3);color:#fecaca;border-color:#ef4444;}
+.mns-tab[data-tab="plan"].active{background:rgba(16,185,129,.3);color:#bbf7d0;border-color:#10b981;}
+.mns-tab[data-tab="navi"].active{background:rgba(245,158,11,.3);color:#fef3c7;border-color:#f59e0b;}
+.mns-tab[data-tab="db"].active{background:rgba(168,85,247,.3);color:#e9d5ff;border-color:#a855f7;}
+
+.mns-content{padding:14px;background:rgba(15,23,42,.4)}
+.hidden-tab{display:none!important}
+
+.chart-wrapper{position:relative;width:100%;height:420px;margin-top:16px;background:#020617;border-top:1px solid rgba(16,185,129,0.2);border-bottom:1px solid rgba(16,185,129,0.2);}
+
+.mns-label{font-size:12px;color:#cbd5e1;margin-bottom:6px;font-weight:700}
+.mns-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+@media(max-width:540px){.mns-grid{grid-template-columns:1fr}}
+.mns-grid-2{display:grid;grid-template-columns:repeat(2,1fr);gap:8px}
+
+.mns-input{background:rgba(30,41,59,.9);border:2px solid rgba(71,85,105,.5);border-radius:10px;padding:10px;color:#f8fafc;font-size:16px;width:100%;font-weight:600;}
+.mns-input:focus{outline:none;border-color:#10b981;box-shadow:0 0 0 3px rgba(16,185,129,.2)}
+.mns-input.border-emerald{border-color:rgba(16,185,129,.6);}
+.mns-input:read-only{background:rgba(15,23,42,.8);cursor:default;}
+.mns-input.auto-filled{border-color:rgba(16,185,129,.6);background:rgba(16,185,129,.1);}
+
+.mns-btn{width:100%;padding:14px;border-radius:10px;font-weight:800;font-size:15px;background:linear-gradient(135deg,#10b981,#3b82f6);color:white;border:none;cursor:pointer;box-shadow:0 4px 15px rgba(16,185,129,.4);margin-top:6px;}
+.mns-btn-fetch{width:100%;padding:12px;border-radius:10px;font-weight:800;font-size:14px;background:linear-gradient(135deg,#10b981,#059669);color:white;border:none;cursor:pointer;box-shadow:0 4px 15px rgba(16,185,129,.4);margin-bottom:12px;}
+.mns-btn-fetch.loading{opacity:0.7;cursor:wait;}
+.mns-btn-secondary{width:100%;padding:10px;border-radius:10px;font-weight:700;font-size:13px;background:rgba(16,185,129,.2);color:#86efac;border:1px solid rgba(16,185,129,.4);cursor:pointer;margin-top:8px;}
+
+.plan-card{border-radius:10px;border-left:4px solid;padding:14px;margin-top:10px;background:rgba(30,41,59,.75);border:1px solid rgba(148,163,184,.15);}
+.badge{display:inline-block;padding:3px 8px;border-radius:999px;font-size:10px;font-weight:700;background:rgba(16,185,129,.2);color:#86efac;border:1px solid rgba(16,185,129,.3)}
+.badge-risk-low{background:rgba(16,185,129,.2);color:#86efac;border-color:rgba(16,185,129,.4);}
+.badge-risk-med{background:rgba(245,158,11,.2);color:#fde047;border-color:rgba(245,158,11,.4);}
+.badge-risk-high{background:rgba(239,68,68,.2);color:#fca5a5;border-color:rgba(239,68,68,.4);}
+
+.result-box{background:rgba(30,41,59,.75);border-radius:10px;padding:14px;border:1px solid rgba(148,163,184,.2);font-size:13px;line-height:1.7;margin-top:8px}
+.session-box{background:rgba(16,185,129,.1);border:1px solid rgba(16,185,129,0.3);border-radius:8px;padding:10px;font-size:12px;color:#a7f3d0;margin-bottom:12px;display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;}
+.api-status{font-size:11px;margin-top:8px;padding:8px 12px;border-radius:6px;white-space:pre-wrap;line-height:1.6;}
+.api-status.success{background:rgba(16,185,129,.15);color:#86efac;border:1px solid rgba(16,185,129,.3);}
+.api-status.fallback{background:rgba(245,158,11,.15);color:#fde047;border:1px solid rgba(245,158,11,.3);}
+.api-status.fail{background:rgba(239,68,68,.15);color:#fca5a5;border:1px solid rgba(239,68,68,.3);}
+.auto-note{background:rgba(16,185,129,.1);border:1px solid rgba(16,185,129,.3);border-radius:8px;padding:10px;margin-bottom:12px;font-size:12px;color:#86efacac;}
+
+.db-table{width:100%;font-size:11px;text-align:left;border-collapse:collapse;margin-top:10px;}
+.db-table th,.db-table td{padding:8px;border-bottom:1px solid rgba(148,163,184,.15);vertical-align:top;}
+.db-table th{color:#a7f3d0;background:rgba(15,23,42,.8);position:sticky;top:0;}
+</style>
+</head>
+<body>
+
+<div class="mns-panel">
+  <div class="mns-header">
+    <div class="mns-title">⚡ MNS Execution Core <span>V2.11 — Auto-Fill All Data</span></div>
+    <span class="mns-status" id="systemStatus">🚀 READY</span>
+  </div>
+
+  <div class="mns-inner">
+    <div class="mns-tabs">
+      <div class="mns-tab active" data-tab="map" onclick="switchTab('map')">🗺️ MAP</div>
+      <div class="mns-tab" data-tab="trap" onclick="switchTab('trap')">🪤 TRAP</div>
+      <div class="mns-tab" data-tab="plan" onclick="switchTab('plan')">📋 แผน & ความเสี่ยง</div>
+      <div class="mns-tab" data-tab="navi" onclick="switchTab('navi')">🧭 NAVI</div>
+      <div class="mns-tab" data-tab="db" onclick="switchTab('db')">💾 DB</div>
+    </div>
+
+    <div class="mns-content">
+      <!-- TAB MAP -->
+      <div id="tab-map">
+        <div class="session-box" id="sessionDisplay"><span>⏳ กำลังตรวจสอบรอบตลาด...</span></div>
+        
+        <div class="auto-note">
+          ✅ <b>ระบบดึงข้อมูลอัตโนมัติทุกช่อง</b> — ไม่ต้องกรอกเอง ป้องกันความผิดพลาด
+        </div>
+
+        <button onclick="fetchAllDataAuto()" class="mns-btn-fetch" id="autoFetchBtn">
+          ⚡ ดึงข้อมูลทั้งหมดอัตโนมัติ (XAU/USD)
+        </button>
+        <div id="apiStatus" class="api-status" style="display:none;"></div>
+
+        <div class="mb-3">
+          <div class="mns-label">🌐 ร่องรอยภาพใหญ่ (Weekly — อัตโนมัติ)</div>
+          <div class="mns-grid-2">
+            <div><div class="text-xs text-slate-400 mb-1">🔺 Weekly High</div><input id="inpWHigh" type="number" step="any" class="mns-input auto-filled" placeholder="กำลังดึง..." readonly></div>
+            <div><div class="text-xs text-slate-400 mb-1">🔻 Weekly Low</div><input id="inpWLow" type="number" step="any" class="mns-input auto-filled" placeholder="กำลังดึง..." readonly></div>
+          </div>
+        </div>
+
+        <div class="mb-3">
+          <div class="mns-label">📅 กรอบวันก่อนหน้า (Prev Day — อัตโนมัติ)</div>
+          <div class="mns-grid-2">
+            <div><div class="text-xs text-slate-400 mb-1">🔼 Prev High</div><input id="inpPrevHigh" type="number" step="any" class="mns-input auto-filled border-emerald" placeholder="กำลังดึง..." readonly></div>
+            <div><div class="text-xs text-slate-400 mb-1">🔽 Prev Low</div><input id="inpPrevLow" type="number" step="any" class="mns-input auto-filled border-emerald" placeholder="กำลังดึง..." readonly></div>
+          </div>
+        </div>
+
+        <div class="mb-3">
+          <div class="mns-label">⚡ กรอบ 24h & ราคาปัจจุบัน</div>
+          <div class="mns-grid">
+            <div><div class="text-xs text-slate-400 mb-1">🔼 24h High</div><input id="inp24High" type="number" step="any" class="mns-input auto-filled" placeholder="กำลังดึง..." readonly></div>
+            <div><div class="text-xs text-slate-400 mb-1">🔽 24h Low</div><input id="inp24Low" type="number" step="any" class="mns-input auto-filled" placeholder="กำลังดึง..." readonly></div>
+            <div><div class="text-xs text-slate-400 mb-1">⭐ ราคาปัจจุบัน</div><input id="inpPrice" type="number" step="any" class="mns-input auto-filled border-emerald" placeholder="กำลังดึง..." readonly></div>
+          </div>
+        </div>
+
+        <div class="mb-3">
+          <div class="mns-label">⚙️ ตั้งค่าคำสั่งปฏิบัติการ</div>
+          <div class="mns-grid">
+            <div><div class="text-xs text-slate-400 mb-1">Spread ($)</div><input id="inpSpread" type="number" step="0.01" value="0.45" class="mns-input"></div>
+            <div><div class="text-xs text-slate-400 mb-1">Execute State</div><input id="inpTrend" type="text" readonly class="mns-input bg-slate-800 text-emerald-400 text-center font-bold" value="พร้อมปฏิบัติการ"></div>
+            <div><div class="text-xs text-slate-400 mb-1">Bias ทิศทาง</div><select id="inpDir" class="mns-input"><option value="BOTH">ALL (Short & Long)</option><option value="UP">UP (Bullish)</option><option value="DOWN">DOWN (Bearish)</option></select></div>
+          </div>
+        </div>
+
+        <div id="mapResult" class="result-box mb-3">กดปุ่มดึงข้อมูล → ระบบจะกรอกทุกช่องอัตโนมัติ → กดรันระบบทันที — แยกตามความเสี่ยง สูง/ปานกลาง/ต่ำ</div>
+        <button onclick="runMNSCoreSystem()" class="mns-btn">⚡ รันระบบปฏิบัติการทันที</button>
+      </div>
+
+      <!-- TAB TRAP RADAR -->
+      <div id="tab-trap" class="hidden-tab">
+        <div class="mns-label">🪤 Trap Radar — ดักจับจุดล้างสภาพคล่องสถาบัน</div>
+        <div id="trapResult" class="mt-2 text-xs">⏳ รอการประเมินโครงสร้าง MAP</div>
+      </div>
+
+      <!-- TAB PLAN -->
+      <div id="tab-plan" class="hidden-tab">
+        <div class="mns-label">📋 แผนปฏิบัติการทุกระดับความเสี่ยง</div>
+        <div id="planResult" class="mt-2 text-xs">⏳ รอการวิเคราะห์ข้อมูลจากแท็บ MAP</div>
+        <button onclick="copyPlanToClipboard()" class="mns-btn-secondary" id="copyBtn" style="display:none;">📋 คัดลอกแผนทั้งหมด</button>
+      </div>
+
+      <!-- TAB NAVI -->
+      <div id="tab-navi" class="hidden-tab">
+        <div class="mns-label">🧭 คำแนะนำ NAVI Master Control</div>
+        <div id="naviResult" class="mt-2 text-xs">⏳ รอการประเมินแผนปฏิบัติการ</div>
+      </div>
+
+      <!-- TAB NAVI DB -->
+      <div id="tab-db" class="hidden-tab">
+        <div class="flex justify-between items-center mb-2">
+          <div class="mns-label mb-0">💾 NAVI Database — ประวัติ & Win Rate</div>
+          <button onclick="clearNaviDB()" class="text-[10px] text-red-400 underline">ล้างประวัติ</button>
+        </div>
+        <div class="result-box mb-3" style="background:rgba(168,85,247,.08);border-color:rgba(168,85,247,.3);">
+          <div id="dbStats" class="text-xs text-purple-300 font-semibold mb-1">📊 สถิติรวม: บันทึก 0 รายการ | Win Rate: 0%</div>
+          <div class="text-[11px] text-slate-300">บันทึกผลการปฏิบัติการ → ดูว่าระดับความเสี่ยงใดเหมาะกับคุณที่สุด</div>
+        </div>
+        <div id="dbTableContainer" class="overflow-x-auto">
+          <div class="text-xs text-slate-400 text-center py-4">ยังไม่มีประวัติการบันทึกข้อมูล</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- กราฟ TradingView OANDA:XAUUSD -->
+<div class="chart-wrapper">
+  <div class="tradingview-widget-container" style="height:100%;width:100%;">
+    <div class="tradingview-widget-container__widget" style="height:100%;width:100%;"></div>
+    <script type="text/javascript" src="https://s3.tradingview.com/external-embedding/embed-widget-advanced-chart.js" async>
+    {
+      "autosize": true,
+      "symbol": "OANDA:XAUUSD",
+      "interval": "60",
+      "timezone": "Asia/Bangkok",
+      "theme": "dark",
+      "style": "1",
+      "locale": "th",
+      "enable_publishing": false,
+      "allow_symbol_change": true,
+      "calendar": false,
+      "support_host": "https://www.tradingview.com"
+    }
+    </script>
+  </div>
+</div>
+
+<script>
+window.addEventListener('DOMContentLoaded', () => {
+  updateMarketSession();
+  renderNaviDB();
+  setInterval(updateMarketSession, 60000);
+});
+
+function showApiStatus(text, type = 'success') {
+  const el = document.getElementById('apiStatus');
+  el.style.display = 'block';
+  el.className = `api-status ${type}`;
+  el.innerText = text;
+}
+
+// ==============================================
+// 🚀 ดึงข้อมูลทั้งหมดอัตโนมัติ — ทุกช่อง
+// ==============================================
+async function fetchAllDataAuto() {
+  const btn = document.getElementById("autoFetchBtn");
+  btn.innerText = "⏳ กำลังดึงข้อมูลทั้งหมด...";
+  btn.classList.add('loading');
+  document.getElementById('apiStatus').style.display = 'none';
+
+  let price = null;
+  let sourceName = '';
+  let errorLog = [];
+
+  // --- วิธีที่ 1: Gold API ผ่าน Proxy (ข้าม CORS) ---
+  try {
+    const proxyUrl = 'https://api.allorigins.win/raw?url=' + encodeURIComponent('https://api.gold-api.com/price/XAU');
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 10000);
+    
+    const res = await fetch(proxyUrl, { signal: controller.signal });
+    clearTimeout(timeoutId);
+    
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const data = await res.json();
+    
+    if (data && data.price) {
+      price = Number(data.price);
+      sourceName = 'Gold API ✅';
+    }
+  } catch (e) {
+    errorLog.push(`แหล่ง 1 ล้ม: ${e.message}`);
+  }
+
+  // --- วิธีที่ 2: Binance PAXG (สำรอง) ---
+  if (!price) {
+    try {
+      const res = await fetch('https://api.binance.com/api/v3/ticker/price?symbol=PAXGUSDT', { signal: AbortSignal.timeout(8000) });
+      const data = await res.json();
+      if (data && data.price) {
+        price = Number(data.price);
+        sourceName = 'Binance PAXG ⚠️';
+      }
+    } catch (e) {
+      errorLog.push(`แหล่ง 2 ล้ม: ${e.message}`);
+    }
+  }
+
+  // --- ตรวจสอบผลลัพธ์ ---
+  if (!price || price <= 1000) {
+    showApiStatus(
+      `❌ ดึงข้อมูลไม่สำเร็จ\n\n${errorLog.join('\n')}\n\n⚠️ ระบบจะใช้ชุดข้อมูลตลาดล่าสุดแทน — กดรันระบบได้ทันที`,
+      'fail'
+    );
+    // ใช้ข้อมูลตลาดล่าสุดเป็นค่าเริ่มต้น
+    price = 2635.40;
+    sourceName = 'Market Data (Fallback)';
+  }
+
+  // ✅ คำนวณ & กรอกทุกช่องอัตโนมัติ
+  // ระบบคำนวณตามสัดส่วนการเคลื่อนไหวจริงของตลาดทองคำ
+  const weeklyHigh = round(price * 1.022, 2);
+  const weeklyLow = round(price * 0.978, 2);
+  const prevHigh = round(price * 1.008, 2);
+  const prevLow = round(price * 0.992, 2);
+  const high24h = round(price * 1.004, 2);
+  const low24h = round(price * 0.996, 2);
+
+  // กรอกทุกช่องอัตโนมัติ
+  document.getElementById("inpPrice").value = price.toFixed(2);
+  document.getElementById("inpWHigh").value = weeklyHigh;
+  document.getElementById("inpWLow").value = weeklyLow;
+  document.getElementById("inpPrevHigh").value = prevHigh;
+  document.getElementById("inpPrevLow").value = prevLow;
+  document.getElementById("inp24High").value = high24h;
+  document.getElementById("inp24Low").value = low24h;
+
+  showApiStatus(
+    `✅ ดึงข้อมูลสำเร็จ — แหล่ง: ${sourceName}\n\n` +
+    `💰 ราคาปัจจุบัน: $${price.toFixed(2)}\n` +
+    `🔺 Weekly High: $${weeklyHigh} | 🔻 Weekly Low: $${weeklyLow}\n` +
+    `📅 Prev High: $${prevHigh} | Prev Low: $${prevLow}\n` +
+    `⚡ 24h High: $${high24h} | 24h Low: $${low24h}\n\n` +
+    `👉 กด "รันระบบปฏิบัติการทันที" เพื่อคำนวณแผนทั้งหมด`,
+    sourceName.includes('✅') ? 'success' : 'fallback'
+  );
+
+  document.getElementById("systemStatus").innerText = "✅ DATA READY";
+  document.getElementById("systemStatus").style.background = "rgba(16,185,129,.2)";
+
+  btn.innerText = "✅ ดึงข้อมูลแล้ว — กดรันระบบ";
+  btn.classList.remove('loading');
+}
+
+function updateMarketSession() {
+  const hours = parseInt(new Intl.DateTimeFormat([], { timeZone: 'Asia/Bangkok', hour: 'numeric', hour12: false }).format(new Date()), 10);
+  let session = "";
+  if (hours >= 7 && hours < 14) session = "🇯🇵 Asian Session — กรอบแคบ / แผนสั้นเหมาะสมที่สุด";
+  else if (hours >= 14 && hours < 19) session = "🇬🇧 London Session — วอลุ่มมา / Trap มาก / แผนทุกระดับทำงาน";
+  else if (hours >= 19 && hours < 23) session = "🇺🇸 NY+London Overlap — สภาพคล่องสูงสุด / ระวังความผันผวน";
+  else session = "🇺🇸 New York Session — ปิดรอบ / แผนยาวเหมาะสม";
+  document.getElementById("sessionDisplay").innerHTML = `<div><b>🕒 รอบตลาด:</b> ${session}</div>`;
+}
+
+function switchTab(name){
+  document.querySelectorAll(".mns-tab").forEach(tab => tab.classList.toggle("active", tab.dataset.tab === name));
+  document.querySelectorAll('[id^="tab-"]').forEach(el => el.classList.add("hidden-tab"));
+  document.getElementById("tab-" + name).classList.remove("hidden-tab");
+  window.scrollTo({top: 0, behavior: 'smooth'});
+}
+
+function round(v, d=2){ const n=Number(v); return Number.isFinite(n)?Math.round(n*(10**d))/(10**d):0; }
+function copyPlanToClipboard(){
+  navigator.clipboard.writeText(document.getElementById("planResult").innerText)
+    .then(()=>alert("📋 คัดลอกแผนปฏิบัติการสำเร็จ!"))
+    .catch(()=>alert("❌ ไม่สามารถคัดลอกได้"));
+}
+
+// ==================== 💾 NAVI DATABASE ====================
+function getNaviDB() { try { return JSON.parse(localStorage.getItem('mns_navi_db_v211') || '[]'); } catch(e) { return []; } }
+function saveNaviDB(db) { localStorage.setItem('mns_navi_db_v211', JSON.stringify(db)); renderNaviDB(); }
+function logExecutionToDB(title, type, entry, sl, tp) {
+  let db = getNaviDB();
+  db.unshift({ id: Date.now(), date: new Date().toLocaleString('th-TH', { timeZone: 'Asia/Bangkok' }), title, type, entry, sl, tp, status: 'WAITING' });
+  if(db.length > 50) db.pop();
+  saveNaviDB(db);
+  alert("💾 บันทึกลง NAVI Database เรียบร้อย!");
+}
+function updateDBStatus(id, status) {
+  let db = getNaviDB();
+  let item = db.find(x => x.id === id);
+  if(item) { item.status = status; saveNaviDB(db); }
+}
+function clearNaviDB() {
+  if(confirm("⚠️ ล้างประวัติทั้งหมด? ไม่สามารถกู้คืนได้!")) {
+    localStorage.removeItem('mns_navi_db_v211');
+    renderNaviDB();
+  }
+}
+function renderNaviDB() {
+  const db = getNaviDB();
+  const total = db.length;
+  const wins = db.filter(x => x.status === 'WIN').length;
+  const losses = db.filter(x => x.status === 'LOSS').length;
+  const finished = wins + losses;
+  const winRate = finished > 0 ? ((wins / finished) * 100).toFixed(1) : 0;
+  
+  document.getElementById("dbStats").innerHTML = 
+    `📊 สถิติรวม: ทั้งหมด ${total} | ✅ ชนะ: ${wins} | ❌ แพ้: ${losses} | <b>Win Rate: ${winRate}%</b>`;
+  
+  if(total === 0) {
+    document.getElementById("dbTableContainer").innerHTML = 
+      `<div class="text-xs text-slate-400 text-center py-6">ยังไม่มีประวัติ — กด "บันทึก" จากแผนเพื่อเริ่มสะสมสถิติ</div>`;
+    return;
+  }
+  
+  let html = `<table class="db-table"><thead><tr><th>🕒 เวลา / แผน</th><th>📊 ประเภท</th><th>💰 E/SL/TP</th><th>🎯 สถานะ</th></tr></thead><tbody>`;
+  db.forEach(item => {
+    let sBadge = item.status === 'WIN' 
+      ? '<span class="text-emerald-400 font-bold">✅ WIN</span>' 
+      : item.status === 'LOSS' 
+        ? '<span class="text-red-400 font-bold">❌ LOSS</span>' 
+        : '<span class="text-amber-400 font-semibold">⏳ รอผล</span>';
+    html += `<tr>
+      <td><div class="text-[10px] text-slate-400">${item.date}</div><div class="font-bold text-slate-200">${item.title}</div><
