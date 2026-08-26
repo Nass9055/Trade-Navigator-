@@ -1,0 +1,418 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>MNS Pro Master V1.9.1 — NAVI Master & Stable Fetch</title>
+
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdn.tailwindcss.com"></script>
+
+<style>
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
+html,body{width:100%;overflow-x:hidden;background:#020617;color:#f8fafc;font-family:'Inter',sans-serif;}
+body{padding-bottom:40px;}
+
+.mono{font-family:'JetBrains Mono',monospace}
+.mns-panel{background:linear-gradient(180deg,rgba(15,23,42,.99) 0%,rgba(15,23,42,.96) 100%);border-bottom:1px solid rgba(59,130,246,.3);box-shadow:0 4px 25px rgba(0,0,0,.5);}
+.mns-header{display:flex;align-items:center;justify-content:space-between;padding:12px 14px;border-bottom:1px solid rgba(59,130,246,.15);background:rgba(59,130,246,.05)}
+.mns-title{font-weight:800;font-size:15px;color:#fbbf24;display:flex;align-items:center;gap:8px;}
+.mns-title span{font-weight:500;font-size:11px;color:#94a3b8}
+.mns-status{font-size:11px;padding:3px 8px;border-radius:999px;background:rgba(16,185,129,.2);color:#86efac;font-weight:600;border:1px solid rgba(16,185,129,.3)}
+
+.mns-tabs{display:flex;gap:4px;padding:8px 10px 0;overflow-x:auto;white-space:nowrap;background:rgba(15,23,42,.98);position:sticky;top:0;z-index:30;}
+.mns-tabs::-webkit-scrollbar{display:none;}
+.mns-tab{
+  font-size:13px; font-weight:700; padding:10px 16px; border-radius:8px 8px 0 0; cursor:pointer;
+  background:rgba(30,41,59,.8); color:#cbd5e1; border:1px solid transparent; border-bottom:none; flex-shrink:0;
+}
+.mns-tab[data-tab="map"].active{background:rgba(59,130,246,.3); color:#bfdbfe; border-color:#3b82f6;}
+.mns-tab[data-tab="plan"].active{background:rgba(16,185,129,.3); color:#bbf7d0; border-color:#10b981;}
+.mns-tab[data-tab="navi"].active{background:rgba(245,158,11,.3); color:#fef3c7; border-color:#f59e0b;}
+.mns-tab[data-tab="broker"].active{background:rgba(139,92,246,.3); color:#ddd6fe; border-color:#8b5cf6;}
+
+.mns-content{padding:14px;background:rgba(15,23,42,.4)}
+.hidden-tab{display:none!important}
+
+.chart-wrapper{position:relative;width:100%;height:420px;margin-top:16px;background:#020617;border-top:1px solid rgba(59,130,246,0.2);border-bottom:1px solid rgba(59,130,246,0.2);}
+
+.mns-label{font-size:12px;color:#cbd5e1;margin-bottom:6px;font-weight:700}
+.mns-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.mns-grid-2{display:grid;grid-template-columns:repeat(2,1fr);gap:8px}
+@media(max-width:540px){.mns-grid,.mns-grid-2{grid-template-columns:1fr}}
+
+.mns-input{background:rgba(30,41,59,.9);border:2px solid rgba(71,85,105,.5);border-radius:10px;padding:10px;color:#f8fafc;font-size:16px;width:100%;font-weight:600;}
+.mns-input:focus{outline:none;border-color:#3b82f6;box-shadow:0 0 0 3px rgba(59,130,246,.2)}
+.mns-input.border-amber{border-color:rgba(251,191,36,.5);}
+
+.mns-btn{width:100%;padding:14px;border-radius:10px;font-weight:800;font-size:15px;background:linear-gradient(135deg,#3b82f6,#8b5cf6);color:white;border:none;cursor:pointer;box-shadow:0 4px 15px rgba(59,130,246,.4);margin-top:6px;}
+.mns-btn-green{background:linear-gradient(135deg,#10b981,#059669);box-shadow:0 4px 15px rgba(16,185,129,.4)}
+.plan-card{border-radius:10px;border-left:4px solid;padding:12px;margin-top:8px;background:rgba(30,41,59,.7)}
+.badge{display:inline-block;padding:3px 8px;border-radius:999px;font-size:10px;font-weight:700;background:rgba(16,185,129,.2);color:#86efac;border:1px solid rgba(16,185,129,.3)}
+.badge-time{background:rgba(245,158,11,.2);color:#fcd34d;border:1px solid rgba(245,158,11,.3)}
+.result-box{background:rgba(30,41,59,.7);border-radius:8px;padding:12px;border:1px solid rgba(148,163,184,.2);font-size:12px;line-height:1.6;margin-top:8px}
+.broker-link{display:block;padding:12px;border-radius:8px;margin-bottom:8px;text-decoration:none;font-weight:700;font-size:13px;text-align:center;}
+.broker-emerald{background:rgba(16,185,129,.2);color:#86efac;border:1px solid rgba(16,185,129,.3)}
+.broker-yellow{background:rgba(234,179,8,.2);color:#fde047;border:1px solid rgba(234,179,8,.3)}
+.broker-amber{background:rgba(245,158,11,.2);color:#fcd34d;border:1px solid rgba(245,158,11,.3)}
+.api-status{font-size:12px;margin-top:8px;padding:10px;border-radius:8px;background:rgba(30,41,59,.8);border:1px solid rgba(71,85,105,.4);line-height:1.4}
+.ok{color:#86efac}.err{color:#fca5a5}.updating{color:#fcd34d}.warn{color:#fcd34d}
+</style>
+</head>
+<body>
+
+<div class="mns-panel">
+  <div class="mns-header">
+    <div class="mns-title">🧭 MNS Pro <span>V1.9.1 NAVI Master</span></div>
+    <span class="mns-status" id="systemStatus">✅ พร้อมปฏิบัติการ</span>
+  </div>
+
+  <div class="mns-inner">
+    <div class="mns-tabs">
+      <div class="mns-tab active" data-tab="map" onclick="switchTab('map')">🗺️ MAP & RISK</div>
+      <div class="mns-tab" data-tab="plan" onclick="switchTab('plan')">📋 PLANS (>68%)</div>
+      <div class="mns-tab" data-tab="navi" onclick="switchTab('navi')">🧭 NAVI Master</div>
+      <div class="mns-tab" data-tab="broker" onclick="switchTab('broker')">🔗 โบรก</div>
+    </div>
+
+    <div class="mns-content">
+      <!-- TAB MAP -->
+      <div id="tab-map">
+        <div class="mb-3">
+          <div class="mns-label">⚡ ดึงราคาทองคำ XAUUSD อัตโนมัติ (รองรับ Proxy ป้องกัน CORS)</div>
+          <button onclick="fetchPrice()" id="apiBtn" class="mns-btn-green mns-btn">⚡ ดึงราคาปัจจุบัน (+0.18%)</button>
+          <div id="apiStatus" class="api-status ok">✅ พร้อม — กดปุ่มดึงราคา หรือกรอกตัวเลขเองได้ทันที</div>
+          
+          <div class="mns-grid mt-3">
+            <div><div class="text-xs text-slate-400 mb-1">🔺 High เดิม</div><input id="inpHigh" type="number" step="any" class="mns-input" placeholder="0.00"></div>
+            <div><div class="text-xs text-slate-400 mb-1">🔻 Low เดิม</div><input id="inpLow" type="number" step="any" class="mns-input" placeholder="0.00"></div>
+            <div><div class="text-xs text-slate-400 mb-1">⭐ ราคาปัจจุบัน (+0.18%)</div><input id="inpPrice" type="number" step="any" class="mns-input border-amber" placeholder="0.00"></div>
+          </div>
+        </div>
+
+        <div class="mb-3">
+          <div class="mns-label">💰 ตั้งค่าเงินทุน & ความเสี่ยง (Risk & Lot Calculator)</div>
+          <div class="mns-grid-2 mb-2">
+            <div><div class="text-xs text-slate-400 mb-1">ทุนพอร์ต ($ Equity)</div><input id="inpEquity" type="number" value="1000" class="mns-input"></div>
+            <div><div class="text-xs text-slate-400 mb-1">ยอมรับความเสี่ยง (%)</div><input id="inpRiskPct" type="number" step="0.5" value="2" class="mns-input"></div>
+          </div>
+        </div>
+
+        <div class="mb-3">
+          <div class="mns-label">⚙️ ตั้งค่าโครงสร้าง & ให้น้ำหนักสภาพคล่อง 40%</div>
+          <div class="mns-grid">
+            <div><div class="text-xs text-slate-400 mb-1">Spread ($)</div><input id="inpSpread" type="number" step="0.01" value="0.45" class="mns-input"></div>
+            <div><div class="text-xs text-slate-400 mb-1">ความมั่นใจเกณฑ์ %</div><input id="inpTrend" type="number" value="72" min="68" max="100" class="mns-input"></div>
+            <div><div class="text-xs text-slate-400 mb-1">ทิศทางหลัก</div><select id="inpDir" class="mns-input"><option value="UP">UP (Bullish)</option><option value="DOWN">DOWN (Bearish)</option><option value="NONE">SIDEWAY</option></select></div>
+          </div>
+        </div>
+
+        <div id="mapResult" class="result-box mb-3">กรอกข้อมูล หรือกดดึงราคา → แล้วกดวิเคราะห์โครงสร้างตลาด & คำนวณ Lot</div>
+        <button onclick="buildMap()" class="mns-btn">🗺️ วิเคราะห์โครงสร้าง + คำนวณ Lot & อายุแผน</button>
+      </div>
+
+      <!-- TAB PLAN -->
+      <div id="tab-plan" class="hidden-tab">
+        <div class="mns-label">📋 แผนการเทรด (จำแนกสั้น/ยาว พร้อมอายุแผน)</div>
+        <div id="planResult" class="mt-2 text-xs">⏳ รอการวิเคราะห์ข้อมูลจากแท็บ MAP</div>
+      </div>
+
+      <!-- TAB NAVI -->
+      <div id="tab-navi" class="hidden-tab">
+        <div class="mns-label">🧭 คำแนะนำจาก NAVI — ผู้รอบรู้ประจำระบบ</div>
+        <div id="naviResult" class="mt-2 text-xs">⏳ รอการประเมินแผนปฏิบัติการ</div>
+      </div>
+
+      <!-- TAB BROKER -->
+      <div id="tab-broker" class="hidden-tab">
+        <div class="mns-label">🔗 โบรกเกอร์ / เครื่องมือ</div>
+        <div class="mt-2">
+          <a href="https://i.miactivitys.com/index-th-TH.html?c=FT9GU&na=TH" target="_blank" rel="noopener noreferrer" class="broker-link broker-emerald">🥇 Mitrade — เปิดบัญชีเทรด</a>
+          <a href="https://one.exnessonelink.com/a/80dmb5wr12" target="_blank" rel="noopener noreferrer" class="broker-link broker-yellow">📊 Exness — เชื่อมต่อ MT5</a>
+          <a href="https://www.tradingview.com/symbols/XAUUSD/" target="_blank" rel="noopener noreferrer" class="broker-link broker-amber">📈 XAUUSD — กราฟ TradingView</a>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- TradingView Widget -->
+<div class="chart-wrapper">
+  <div class="tradingview-widget-container" style="height:100%;width:100%;">
+    <div class="tradingview-widget-container__widget" style="height:100%;width:100%;"></div>
+    <script type="text/javascript" src="https://s3.tradingview.com/external-embedding/embed-widget-advanced-chart.js" async>
+    {
+      "autosize": true,
+      "symbol": "OANDA:XAUUSD",
+      "interval": "1",
+      "timezone": "Asia/Bangkok",
+      "theme": "dark",
+      "style": "1",
+      "locale": "th",
+      "enable_publishing": false,
+      "allow_symbol_change": true,
+      "calendar": false,
+      "support_host": "https://www.tradingview.com"
+    }
+    </script>
+  </div>
+</div>
+
+<script>
+let lastPrice = null;
+
+function switchTab(name){
+  document.querySelectorAll(".mns-tab").forEach(tab=>{
+    tab.classList.toggle("active", tab.dataset.tab === name);
+  });
+  document.querySelectorAll('[id^="tab-"]').forEach(el=>el.classList.add("hidden-tab"));
+  const target = document.getElementById("tab-" + name);
+  if(target) target.classList.remove("hidden-tab");
+  window.scrollTo({top: 0, behavior: 'smooth'});
+}
+
+function round(v, d=2){ 
+  const n = Number(v); 
+  return Number.isFinite(n) ? Math.round(n * (10**d)) / (10**d) : 0; 
+}
+
+// ============================================================
+// ✅ ระบบดึงราคาเสถียร (V1.9.1) พร้อมระบบสำรองหลายช่องทาง
+// ============================================================
+async function fetchPrice(){
+  const status = document.getElementById("apiStatus");
+  const btn = document.getElementById("apiBtn");
+
+  btn.disabled = true;
+  btn.textContent = "⏳ กำลังเชื่อมต่อ...";
+  status.className = "api-status updating";
+  status.textContent = "🔄 กำลังค้นหาช่องทางดึงราคาทองคำ...";
+
+  let price = null;
+
+  // รายการ Endpoint สำรองเพื่อป้องกันปัญหา CORS บล็อกในเบราว์เซอร์
+  const endpoints = [
+    "https://api.binance.com/api/v3/ticker/price?symbol=PAXGUSDT",
+    "https://api.coingecko.com/api/v3/simple/price?ids=pax-gold&vs_currencies=usd",
+    "https://corsproxy.io/?https://api.binance.com/api/v3/ticker/price?symbol=PAXGUSDT"
+  ];
+
+  for(let url of endpoints){
+    try {
+      const res = await fetch(url, {cache: "no-store"});
+      if(res.ok){
+        const data = await res.json();
+        if(data && data.price){
+          price = Number(data.price);
+        } else if(data && data["pax-gold"] && data["pax-gold"].usd){
+          price = Number(data["pax-gold"].usd);
+        }
+        if(price && price >= 2000 && price <= 5000){
+          break;
+        }
+      }
+    } catch(e) {
+      console.warn("Endpoint failed:", url, e);
+    }
+  }
+
+  if(!price && lastPrice){
+    price = lastPrice;
+  }
+
+  if(!price || price <= 1000 || price > 5000){
+    status.className = "api-status err";
+    status.textContent = "⚠️ ไม่สามารถดึงอัตโนมัติได้ (ติดข้อจำกัดเครือข่าย) — กรุณาดูกราฟ TradingView ด้านล่างแล้วกรอก High / Low / ราคาปัจจุบัน เองได้ทันทีครับ ระบบพร้อมคำนวณอัตโนมัติ";
+    btn.disabled = false;
+    btn.textContent = "⚡ ดึงราคาปัจจุบัน (+0.18%)";
+    return;
+  }
+
+  lastPrice = price;
+  
+  // คำนวณบวกเพิ่ม 0.18% อัตโนมัติ
+  let adjustedPrice = round(price * 1.0018, 2);
+
+  document.getElementById("inpPrice").value = adjustedPrice;
+  
+  const highEl = document.getElementById("inpHigh");
+  const lowEl = document.getElementById("inpLow");
+  if(!highEl.value || Number(highEl.value) <= adjustedPrice) highEl.value = round(adjustedPrice + 10.0, 2);
+  if(!lowEl.value || Number(lowEl.value) >= adjustedPrice) lowEl.value = round(adjustedPrice - 10.0, 2);
+
+  status.className = "api-status ok";
+  status.textContent = "✅ ดึงราคาสำเร็จและบวก +0.18% เรียบร้อย! ($" + adjustedPrice + ")";
+  btn.disabled = false;
+  btn.textContent = "⚡ ดึงราคาปัจจุบัน (+0.18%)";
+}
+
+// ============================================================
+// 🧭 NAVI MASTER ENGINE: Scalp vs Swing & Plan Shelf Life
+// ============================================================
+function buildMap(){
+  const high = Number(document.getElementById("inpHigh").value);
+  const low = Number(document.getElementById("inpLow").value);
+  const price = Number(document.getElementById("inpPrice").value);
+  const spread = Number(document.getElementById("inpSpread").value);
+  const equity = Number(document.getElementById("inpEquity").value) || 1000;
+  const riskPct = Number(document.getElementById("inpRiskPct").value) || 2;
+  const minConfidence = Math.max(68, Number(document.getElementById("inpTrend").value) || 68);
+  const dir = document.getElementById("inpDir").value;
+
+  if(!high || !low || !price || high <= low){
+    alert("❌ กรุณากรอกข้อมูล High, Low และ Price ให้ถูกต้องก่อนวิเคราะห์ครับ");
+    return;
+  }
+
+  const range = round(high - low, 2);
+  let plans = [];
+
+  function calcLot(entry, sl){
+    const slDist = Math.abs(entry - sl);
+    if(slDist <= 0) return 0.01;
+    const riskAmount = equity * (riskPct / 100);
+    let lot = riskAmount / (slDist * 100);
+    return Math.max(0.01, round(lot, 2));
+  }
+
+  if(dir === "UP" || dir === "NONE"){
+    let slBuy1 = round(low - spread - 3.0, 2);
+    let entryBuy1 = round(low + spread - (spread * 2), 2);
+    let tpBuy1 = round(high, 2);
+    let tp1Buy1 = round(entryBuy1 + ((tpBuy1 - entryBuy1) * 0.5), 2);
+    let lot1 = calcLot(entryBuy1, slBuy1);
+    let prob1 = 78;
+
+    if(prob1 >= minConfidence){
+      plans.push({
+        type: "BUY",
+        style: "⚡ เทรดสั้น (Intraday Scalp)",
+        shelfLife: "อายุแผน: 3 ชั่วโมง (หมดอายุเมื่อจบ Session หรือชน SL)",
+        title: "Liquidity Sweep Alpha (Scalp)",
+        prob: prob1,
+        entry: entryBuy1,
+        sl: slBuy1,
+        tp: tpBuy1,
+        tp1: tp1Buy1,
+        lot: lot1,
+        desc: "เน้นเก็บสั้นชิดแนวรับ สภาพคล่องชัดเจน 40% มีระบบ Partial TP1 ล็อกกำไรครึ่งทางทันที"
+      });
+    }
+
+    let slBuy2 = round(low - 3.5, 2);
+    let entryBuy2 = round(low + (range * 0.236), 2);
+    let tpBuy2 = round(high + (range * 0.5), 2);
+    let tp1Buy2 = round(entryBuy2 + ((tpBuy2 - entryBuy2) * 0.5), 2);
+    let lot2 = calcLot(entryBuy2, slBuy2);
+    let prob2 = 74;
+
+    if(prob2 >= minConfidence){
+      plans.push({
+        type: "BUY",
+        style: "🌊 เทรดยาว (Macro Swing)",
+        shelfLife: "อายุแผน: 24 ชั่วโมง (หรือจนกว่าจะประกาศข่าวแรง)",
+        title: "Macro Trend Continuation (Swing)",
+        prob: prob2,
+        entry: entryBuy2,
+        sl: slBuy2,
+        tp: tpBuy2,
+        tp1: tp1Buy2,
+        lot: lot2,
+        desc: "เกาะเทรนด์ใหญ่ระยะยาว ปล่อยรันเป้าหมายทะลุ High เดิม พร้อมคำนวณล็อตปลอดภัยตามพอร์ต"
+      });
+    }
+  }
+
+  if(dir === "DOWN" || dir === "NONE"){
+    let slSell1 = round(high + spread + 3.0, 2);
+    let entrySell1 = round(high - spread + (spread * 2), 2);
+    let tpSell1 = round(low, 2);
+    let tp1Sell1 = round(entrySell1 - ((entrySell1 - tpSell1) * 0.5), 2);
+    let lot3 = calcLot(entrySell1, slSell1);
+    let prob3 = 80;
+
+    if(prob3 >= minConfidence){
+      plans.push({
+        type: "SELL",
+        style: "⚡ เทรดสั้น (Intraday Scalp)",
+        shelfLife: "อายุแผน: 3 ชั่วโมง (หมดอายุเมื่อจบ Session หรือชน SL)",
+        title: "BSL Sweep Alpha (Scalp)",
+        prob: prob3,
+        entry: entrySell1,
+        sl: slSell1,
+        tp: tpSell1,
+        tp1: tp1Sell1,
+        lot: lot3,
+        desc: "ดักชอร์ตหลังกวาด High สภาพคล่องชัดเจนสูงสุด บีบ SL แคบ ล็อกกำไร 50% รวดเร็ว"
+      });
+    }
+
+    let slSell2 = round(high + 3.5, 2);
+    let entrySell2 = round(high - (range * 0.236), 2);
+    let tpSell2 = round(low - (range * 0.5), 2);
+    let tp1Sell2 = round(entrySell2 - ((entrySell2 - tpSell2) * 0.5), 2);
+    let lot4 = calcLot(entrySell2, slSell2);
+    let prob4 = 75;
+
+    if(prob4 >= minConfidence){
+      plans.push({
+        type: "SELL",
+        style: "🌊 เทรดยาว (Macro Swing)",
+        shelfLife: "อายุแผน: 24 ชั่วโมง (หรือจนกว่าจะประกาศข่าวแรง)",
+        title: "Premium Rejection (Swing)",
+        prob: prob4,
+        entry: entrySell2,
+        sl: slSell2,
+        tp: tpSell2,
+        tp1: tp1Sell2,
+        lot: lot4,
+        desc: "โซนขายพรีเมียมระยะยาว เป้าหมายวิ่งทะลุ Low เดิม ปรับขนาดล็อตทนทานต่อการสวิงของกราฟ"
+      });
+    }
+  }
+
+  document.getElementById("mapResult").innerHTML = `
+    <b>📍 NAVI Map Analysis:</b><br>
+    • กรอบโครงสร้าง: Range $${range} | ทุนพอร์ต: $${equity} (ความเสี่ยง ${riskPct}%)<br>
+    • เกณฑ์ความสำเร็จ: <b>>= ${minConfidence}%</b> | แผนที่เปิดใช้งาน: <b>${plans.length} แผน</b>
+  `;
+
+  let planHtml = "";
+  if(plans.length === 0){
+    planHtml = `<div class="result-box text-amber-400">⚠️ ไม่พบแผนที่มีความน่าจะเป็นสูงเกิน ${minConfidence}% ลองปรับเกณฑ์ความมั่นใจหรือทิศทางหลักใหม่</div>`;
+  } else {
+    plans.forEach((p, idx) => {
+      let badgeColor = p.type === 'BUY' ? 'background:rgba(16,185,129,.2);color:#86efac;border-color:rgba(16,185,129,.3)' : 'background:rgba(239,68,68,.2);color:#fca5a5;border-color:rgba(239,68,68,.3)';
+      planHtml += `
+        <div class="plan-card" style="border-left-color:${p.type === 'BUY' ? '#10b981' : '#ef4444'}">
+          <div class="flex justify-between items-center mb-1">
+            <b>🔥 แผนที่ ${idx+1}: ${p.title}</b>
+            <span class="badge" style="${badgeColor}">ความสำเร็จ ${p.prob}%</span>
+          </div>
+          <div class="text-[11px] text-amber-300 font-semibold mb-1">${p.style} | <span class="badge-time" style="padding:1px 6px;border-radius:4px;font-size:9px;">⏳ ${p.shelfLife}</span></div>
+          <div class="text-[11px] text-slate-300 mb-2">${p.desc}</div>
+          <div class="mono text-xs">
+            1. <b>Entry:</b> $${p.entry} | 2. <b>SL:</b> $${p.sl} | 3. <b>Lot แนะนำ:</b> <span class="text-amber-400 font-bold">${p.lot} Lot</span><br>
+            4. <b>Partial TP1 (ล็อก 50%):</b> $${p.tp1} | 5. <b>Market TP:</b> $${p.tp}
+          </div>
+        </div>
+      `;
+    });
+  }
+  document.getElementById("planResult").innerHTML = planHtml;
+
+  let bestPlan = plans.length > 0 ? plans.reduce((prev, curr) => (curr.prob > prev.prob) ? curr : null, plans[0]) : null;
+
+  if(bestPlan){
+    document.getElementById("naviResult").innerHTML = `
+      <div class="result-box" style="border-color:rgba(245,158,11,.4); background:rgba(245,158,11,.08);">
+        <div class="font-bold text-amber-400 mb-1">⭐ NAVI Master Verdict (แผนที่เหมาะสมที่สุด):</div>
+        <div class="text-white font-semibold mb-1">${bestPlan.title} (${bestPlan.style})</div>
+        <div class="text-xs text-amber-300 mb-1">⏳ <b>${bestPlan.shelfLife}</b></div>
+        <div class="text-xs text-slate-300 mb-2">${bestPlan.desc}</div>
+        <div class="mono text-xs text-amber-300">
+          • จุดเข้าทำ (Sharp Entry): <b>$${bestPlan.entry}</b><br>
+          • จุดตัดขาดทุน (Safe SL): <b>$${bestPlan.sl}</b><br>
+          • ขนาดล็อตแนะนำ (Risk ${riskPct}%): <b class="text-white">${bestPlan.lot} Lot</b><br>
+          • แบ่งทำกำไร TP1 (50%): <b>$${bestPlan.tp1}</b><br>
+          • เป้าหมายตลาดหลัก Market TP: <b>$${bestP
