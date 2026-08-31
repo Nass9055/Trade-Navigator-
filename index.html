@@ -1,0 +1,298 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>MNS Pro Master V1.7.5 — XAUUSD Auto Direction</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+html,body{width:100%;overflow-x:hidden;background:#020617;color:#f8fafc;font-family:Inter,sans-serif}
+body{padding-bottom:40px}.mono{font-family:"JetBrains Mono",monospace}
+.mns-panel{background:linear-gradient(180deg,rgba(15,23,42,.99),rgba(15,23,42,.96));border-bottom:1px solid rgba(59,130,246,.3);box-shadow:0 4px 25px rgba(0,0,0,.5)}
+.mns-header{display:flex;align-items:center;justify-content:space-between;padding:12px 14px;border-bottom:1px solid rgba(59,130,246,.15);background:rgba(59,130,246,.05);gap:8px}
+.mns-title{font-weight:800;font-size:15px;color:#fbbf24;display:flex;align-items:center;gap:8px}.mns-title span{font-weight:500;font-size:11px;color:#94a3b8}
+.mns-status{font-size:11px;padding:3px 8px;border-radius:999px;background:rgba(16,185,129,.2);color:#86efac;font-weight:600;border:1px solid rgba(16,185,129,.3);white-space:nowrap}
+.mns-tabs{display:flex;gap:4px;padding:8px 10px 0;overflow-x:auto;white-space:nowrap;background:rgba(15,23,42,.98);position:sticky;top:0;z-index:30}.mns-tabs::-webkit-scrollbar{display:none}
+.mns-tab{font-size:13px;font-weight:700;padding:10px 16px;border-radius:8px 8px 0 0;cursor:pointer;background:rgba(30,41,59,.8);color:#cbd5e1;border:1px solid transparent;border-bottom:none;flex-shrink:0}
+.mns-tab.active{border-color:currentColor}.mns-tab[data-tab=map].active{background:rgba(59,130,246,.3);color:#bfdbfe}.mns-tab[data-tab=plan].active{background:rgba(16,185,129,.3);color:#bbf7d0}.mns-tab[data-tab=navi].active{background:rgba(245,158,11,.3);color:#fef3c7}.mns-tab[data-tab=broker].active{background:rgba(139,92,246,.3);color:#ddd6fe}
+.mns-content{padding:14px;background:rgba(15,23,42,.4)}.hidden-tab{display:none!important}
+.mns-label{font-size:12px;color:#cbd5e1;margin-bottom:6px;font-weight:700}.mns-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+@media(max-width:540px){.mns-grid{grid-template-columns:1fr}}
+.mns-input{background:rgba(30,41,59,.9);border:2px solid rgba(71,85,105,.5);border-radius:10px;padding:10px;color:#f8fafc;font-size:16px;width:100%;font-weight:600}
+.mns-input:focus{outline:none;border-color:#3b82f6;box-shadow:0 0 0 3px rgba(59,130,246,.2)}.border-amber{border-color:rgba(251,191,36,.5)}
+.mns-btn{width:100%;padding:14px;border-radius:10px;font-weight:800;font-size:15px;background:linear-gradient(135deg,#3b82f6,#8b5cf6);color:white;border:none;cursor:pointer;box-shadow:0 4px 15px rgba(59,130,246,.4);margin-top:6px}.mns-btn:disabled{opacity:.55;cursor:wait}
+.mns-btn-green{background:linear-gradient(135deg,#10b981,#059669);box-shadow:0 4px 15px rgba(16,185,129,.4)}
+.plan-card{border-radius:10px;border-left:4px solid;padding:12px;margin-top:8px;background:rgba(30,41,59,.7)}.badge{display:inline-block;padding:3px 8px;border-radius:999px;font-size:10px;font-weight:700;background:rgba(16,185,129,.2);color:#86efac;border:1px solid rgba(16,185,129,.3)}
+.result-box{background:rgba(30,41,59,.7);border-radius:8px;padding:12px;border:1px solid rgba(148,163,184,.2);font-size:12px;line-height:1.6;margin-top:8px}
+.broker-link{display:block;padding:12px;border-radius:8px;margin-bottom:8px;text-decoration:none;font-weight:700;font-size:13px;text-align:center}.broker-emerald{background:rgba(16,185,129,.2);color:#86efac;border:1px solid rgba(16,185,129,.3)}.broker-yellow{background:rgba(234,179,8,.2);color:#fde047;border:1px solid rgba(234,179,8,.3)}.broker-amber{background:rgba(245,158,11,.2);color:#fcd34d;border:1px solid rgba(245,158,11,.3)}
+.api-status{font-size:12px;margin-top:8px;padding:10px;border-radius:8px;background:rgba(30,41,59,.8);border:1px solid rgba(71,85,105,.4);line-height:1.4}.ok{color:#86efac}.err{color:#fca5a5}.updating{color:#fcd34d}.warn{color:#fcd34d}.auto-info{font-size:11px;color:#93c5fd;margin-top:4px}
+.chart-wrapper{position:relative;width:100%;height:420px;margin-top:16px;background:#020617;border-top:1px solid rgba(59,130,246,.2);border-bottom:1px solid rgba(59,130,246,.2)}
+.small{font-size:11px;color:#94a3b8}.danger{color:#fca5a5}.success{color:#86efac}.yellow{color:#fde68a}
+</style>
+</head>
+<body>
+<div class="mns-panel">
+<header class="mns-header">
+  <div class="mns-title">🧭 MNS Pro <span>V1.7.5 XAUUSD Auto</span></div>
+  <span class="mns-status" id="systemStatus">⏳ กำลังเริ่มระบบ</span>
+</header>
+<div class="mns-tabs">
+  <div class="mns-tab active" data-tab="map" onclick="switchTab('map')">🗺️ MAP</div>
+  <div class="mns-tab" data-tab="plan" onclick="switchTab('plan')">📋 PLANS</div>
+  <div class="mns-tab" data-tab="navi" onclick="switchTab('navi')">🧭 NAVI</div>
+  <div class="mns-tab" data-tab="broker" onclick="switchTab('broker')">🔗 โบรก</div>
+</div>
+<div class="mns-content">
+<section id="tab-map">
+  <div class="mb-3">
+    <div class="mns-label">⚡ ดึงราคา XAUUSD อัตโนมัติ</div>
+    <button onclick="fetchPrice()" id="apiBtn" class="mns-btn mns-btn-green">⚡ ดึงราคาปัจจุบัน</button>
+    <div id="apiStatus" class="api-status ok">⏳ กำลังเตรียมแหล่งราคาสำรอง...</div>
+    <div class="mns-grid" style="margin-top:12px">
+      <div><div class="small">🔺 High เดิม</div><input id="inpHigh" type="number" step="any" class="mns-input" placeholder="เช่น 3450.00" oninput="autoDetectSettings()"></div>
+      <div><div class="small">🔻 Low เดิม</div><input id="inpLow" type="number" step="any" class="mns-input" placeholder="เช่น 3420.00" oninput="autoDetectSettings()"></div>
+      <div><div class="small">⭐ ราคาปัจจุบัน</div><input id="inpPrice" type="number" step="any" class="mns-input border-amber" placeholder="XAUUSD" oninput="autoDetectSettings()"></div>
+    </div>
+  </div>
+  <div class="mb-3">
+    <div class="mns-label">⚙️ ตั้งค่าระบบ — โครงสร้างและเกณฑ์</div>
+    <div class="mns-grid">
+      <div><div class="small">Spread ($)</div><input id="inpSpread" type="number" step="0.01" value="0.45" class="mns-input"></div>
+      <div><div class="small">เกณฑ์ขั้นต่ำ %</div><input id="inpTrend" type="number" value="70" min="65" max="95" class="mns-input"></div>
+      <div><div class="small">ทิศทางหลัก</div><select id="inpDir" class="mns-input"><option value="AUTO" selected>🔄 อัตโนมัติ</option><option value="UP">UP (Bullish)</option><option value="DOWN">DOWN (Bearish)</option><option value="NONE">SIDEWAY</option></select></div>
+    </div>
+    <div id="autoInfo" class="auto-info">ระบบจะสร้างแผนเทรดก่อน ➔ ประเมินความมั่นใจรายแผน ➔ ส่งต่อให้ NAVI ประเมินซ้ำ</div>
+  </div>
+  <div id="mapResult" class="result-box">กรอกข้อมูล หรือกดดึงราคา ➔ จากนั้นกดวิเคราะห์โครงสร้างตลาด</div>
+  <button onclick="buildMap()" class="mns-btn">🗺️ สร้างแผน + ส่งต่อ NAVI ประเมินซ้ำ</button>
+</section>
+<section id="tab-plan" class="hidden-tab">
+  <div class="mns-label">📋 แผนการเทรด (ผ่านการประเมินความมั่นใจเบื้องต้น)</div>
+  <div id="planResult" class="text-xs">⏳ รอการวิเคราะห์ข้อมูลจาก MAP</div>
+</section>
+<section id="tab-navi" class="hidden-tab">
+  <div class="mns-label">🧭 NAVI — ประเมินซ้ำและเลือก Best Setup</div>
+  <div id="naviResult" class="text-xs">⏳ รอการประเมินซ้ำจาก NAVI</div>
+</section>
+<section id="tab-broker" class="hidden-tab">
+  <div class="mns-label">🔗 เครื่องมือ</div>
+  <a href="https://i.miactivitys.com/index-th-TH.html?c=FT9GU&na=TH" target="_blank" rel="noopener noreferrer" class="broker-link broker-emerald">🥇 Mitrade — เปิดบัญชีเทรด</a>
+  <a href="https://one.exnessonelink.com/a/80dmb5wr12" target="_blank" rel="noopener noreferrer" class="broker-link broker-yellow">📊 Exness — MT5</a>
+  <a href="https://www.tradingview.com/symbols/XAUUSD/" target="_blank" rel="noopener noreferrer" class="broker-link broker-amber">📈 XAUUSD — TradingView</a>
+</section>
+</div>
+</div>
+
+<div class="chart-wrapper">
+  <div id="tv_chart" style="height:100%;width:100%"></div>
+</div>
+
+<script>
+const STORAGE_KEY="MNS_PRO_V1_7_5_XAUUSD";
+let lastPrice=null,detectedDir=null,autoRefreshTimer=null;
+
+function switchTab(name){
+  document.querySelectorAll(".mns-tab").forEach(t=>t.classList.toggle("active",t.dataset.tab===name));
+  document.querySelectorAll('[id^="tab-"]').forEach(e=>e.classList.add("hidden-tab"));
+  const target=document.getElementById("tab-"+name); if(target) target.classList.remove("hidden-tab");
+  window.scrollTo({top:0,behavior:"smooth"});
+}
+function round(v,d=2){const n=Number(v);return Number.isFinite(n)?Math.round(n*10**d)/10**d:0}
+function setStatus(text,cls="ok"){const e=document.getElementById("apiStatus");e.className="api-status "+cls;e.textContent=text}
+
+function autoDetectSettings(){
+  const high=Number(inpHigh.value),low=Number(inpLow.value),price=Number(inpPrice.value);
+  if(!Number.isFinite(high)||!Number.isFinite(low)||!Number.isFinite(price)||high<=low){
+    autoInfo.textContent="⏳ รอข้อมูล High / Low / Price ให้ครบ...";
+    return;
+  }
+  const range=high-low,position=(price-low)/range;
+  if(position>.62){detectedDir="UP";autoInfo.innerHTML="✅ <b>ขาขึ้น (Bullish)</b> — ราคาอยู่โซนบน "+(position*100).toFixed(0)+"%"}
+  else if(position<.38){detectedDir="DOWN";autoInfo.innerHTML="✅ <b>ขาลง (Bearish)</b> — ราคาอยู่โซนล่าง "+(position*100).toFixed(0)+"%"}
+  else{detectedDir="NONE";autoInfo.innerHTML="⚖️ <b>Sideway</b> — ราคาอยู่ใกล้จุดกลาง "+(position*100).toFixed(0)+"%"}
+}
+
+function validXau(p){ return Number.isFinite(p)&&p>=1000&&p<=10000; }
+
+async function fetchJSON(url,timeout=8000){
+  const c=new AbortController();const t=setTimeout(()=>c.abort(),timeout);
+  try{const r=await fetch(url,{cache:"no-store",signal:c.signal,headers:{"Accept":"application/json"}});if(!r.ok)throw Error("HTTP "+r.status);return await r.json()}
+  finally{clearTimeout(t)}
+}
+
+async function fetchPrice(){
+  const btn=document.getElementById("apiBtn");btn.disabled=true;btn.textContent="⏳ กำลังดึง XAUUSD...";
+  setStatus("🔄 กำลังค้นหาราคาทองคำจากแหล่งข้อมูล...","updating");
+  let price=null,source="";
+  const sources=[
+    async()=>{const d=await fetchJSON("https://api.gold-api.com/price/XAU");return {p:Number(d.price),s:"Gold-API XAU"}},
+    async()=>{const d=await fetchJSON("https://api.coinbase.com/v2/exchange-rates?currency=XAU");return {p:Number(d.data?.rates?.USD),s:"Coinbase XAU rate"}},
+    async()=>{const d=await fetchJSON("https://api.coingecko.com/api/v3/simple/price?ids=pax-gold&vs_currencies=usd");return {p:Number(d["pax-gold"]?.usd),s:"CoinGecko PAXG"}}
+  ];
+  for(const get of sources){
+    try{const r=await get();if(validXau(r.p)){price=round(r.p,2);source=r.s;break}}catch(e){console.warn("price source failed",e)}
+  }
+  if(!price&&lastPrice){price=lastPrice;source="ราคาล่าสุดที่บันทึกไว้";setStatus("⚠️ ใช้ราคาล่าสุด: $"+price,"warn")}
+  if(!price){
+    setStatus("❌ ดึงราคาอัตโนมัติไม่สำเร็จ — กรอก XAUUSD จากกราฟได้ทันที","err");
+    btn.disabled=false;btn.textContent="⚡ ดึงราคาปัจจุบัน";return;
+  }
+  lastPrice=price;inpPrice.value=price;
+  const h=Number(inpHigh.value),l=Number(inpLow.value);
+  if(!h||h<=price)inpHigh.value=round(price+10,2);
+  if(!l||l>=price)inpLow.value=round(price-10,2);
+  autoDetectSettings();
+  setStatus("✅ "+source+" — XAUUSD ≈ $"+price,"ok");
+  btn.disabled=false;btn.textContent="⚡ ดึงราคาปัจจุบัน";
+  saveState();
+}
+
+// ============================================================
+// ⚙️ ลำดับใหม่: สร้างแผน ➔ ประเมินความมั่นใจเบื้องต้นจาก Plan ➔ ส่งให้ Navi ประเมินซ้ำ
+// ============================================================
+function buildMap(){
+  const high=Number(inpHigh.value),low=Number(inpLow.value),price=Number(inpPrice.value),spread=Math.max(0,Number(inpSpread.value)||0);
+  if(!Number.isFinite(high)||!Number.isFinite(low)||!Number.isFinite(price)||high<=low){alert("❌ กรุณากรอก High, Low และ Price ให้ถูกต้อง");return}
+  autoDetectSettings();
+  let dir=inpDir.value==="AUTO"?(detectedDir||"NONE"):inpDir.value;
+  const minConfidence=Number(inpTrend.value)||70;
+  const range=round(high-low),mid=round((high+low)/2),rawPlans=[];
+
+  // 1️⃣ สร้างโครงสร้างแผน (Plans Generation)
+  if(dir==="UP"||dir==="NONE"){
+    rawPlans.push({
+      type:"BUY",
+      title:"Liquidity Buy — Setup Alpha",
+      desc:"รอราคาย่อเข้าโซนแนวรับเพื่อเก็บ Liquidity เป้าหมายชน High เดิม",
+      entry:round(low-spread), sl:round(low-spread-3), tp:round(high), setupType:"Alpha"
+    });
+    rawPlans.push({
+      type:"BUY",
+      title:"Retracement Buy — Setup Beta",
+      desc:"แผนต่อเนื่องตามโครงสร้างกรอบราคา (OTE Zone)",
+      entry:round(low+range*.236-spread*2), sl:round(low-1.5), tp:round(high+range*.382), setupType:"Beta"
+    });
+  }
+  if(dir==="DOWN"||dir==="NONE"){
+    rawPlans.push({
+      type:"SELL",
+      title:"Liquidity Short — Setup Alpha",
+      desc:"รอราคาดีดชนแนวต้านเพื่อกวาด Buy Stop เป้าหมายเก็บ Low เดิม",
+      entry:round(high+spread), sl:round(high+spread+3), tp:round(low), setupType:"Alpha"
+    });
+    rawPlans.push({
+      type:"SELL",
+      title:"Premium Rejection — Setup Beta",
+      desc:"แผนขายจากโซนพรีเมียมของกรอบราคา",
+      entry:round(high-range*.236+spread*2), sl:round(high+1.5), tp:round(low-range*.382), setupType:"Beta"
+    });
+  }
+
+  // คำนวณความเสี่ยงและผลตอบแทนเบื้องต้น
+  rawPlans.forEach(p=>{
+    p.risk=round(Math.abs(p.entry-p.sl));
+    p.reward=round(Math.abs(p.tp-p.entry));
+    p.rr=p.risk?round(p.reward/p.risk,2):0;
+  });
+
+  // 2️⃣ ประเมินความมั่นใจเบื้องต้นจาก Plan (Plan Initial Confidence Assessment)
+  const evaluatedPlans = rawPlans.map(p => {
+    let baseConf = 70;
+    // เงื่อนไขประเมินจากคุณภาพแผนและ R:R
+    if(p.rr >= 2.0) baseConf += 8;
+    else if(p.rr >= 1.5) baseConf += 5;
+    else baseConf += 2;
+
+    if(p.setupType === "Alpha") baseConf += 4; // Setup หลักมีความน่าสูงกว่า
+    
+    // ตรวจสอบตำแหน่งราคาปัจจุบันเทียบกับ Entry
+    const distanceToEntry = Math.abs(price - p.entry);
+    if(distanceToEntry <= range * 0.15) baseConf += 5; // ใกล้จุดเข้าซื้อแล้ว
+
+    p.planConfidence = Math.min(95, Math.max(50, baseConf));
+    return p;
+  });
+
+  // กรองแผนที่ผ่านเกณฑ์เบื้องต้น
+  const filteredPlans = evaluatedPlans.filter(p => p.planConfidence >= minConfidence);
+
+  // แสดงผล MAP
+  mapResult.innerHTML=`<b>📍 Auto-Direction Map</b><br>• ทิศทาง: <b>${dir==="UP"?"📈 ขาขึ้น":dir==="DOWN"?"📉ขาลง":"⚖️ Sideway"}</b> | เกณฑ์ตั้งต้น: <b>${minConfidence}%</b><br>• Range: $${range} | EQ: $${mid} | Price: $${price}<br>• สร้างแผนสำเร็จทั้งหมด: <b>${evaluatedPlans.length} แผน</b> (ผ่านเกณฑ์เบื้องต้น ${filteredPlans.length} แผน)`;
+
+  // แสดงผล Plans Tab
+  if(!evaluatedPlans.length){
+    planResult.innerHTML=`<div class="result-box yellow">⚠️ ไม่สามารถสร้างแผนได้ในเงื่อนไขปัจจุบัน</div>`;
+  } else {
+    planResult.innerHTML = evaluatedPlans.map((p,i)=>`
+      <div class="plan-card" style="border-left-color:${p.type==="BUY"?"#10b981":"#ef4444"}">
+        <div><b>${p.type==="BUY"?"🟢":"🔴"} แผน ${i+1}: ${p.title}</b> <span class="badge">ความมั่นใจแผน: ${p.planConfidence}%</span></div>
+        <div class="small" style="margin:7px 0">${p.desc}</div>
+        <div class="mono">Entry <b>$${p.entry}</b> · SL <b class="danger">$${p.sl}</b> · TP <b class="success">$${p.tp}</b></div>
+        <div class="small" style="margin-top:5px">Risk $${p.risk} · Reward $${p.reward} · <b class="yellow">R:R 1:${p.rr}</b></div>
+      </div>`).join("");
+  }
+
+  // 3️⃣ ส่งต่อให้ NAVI ประเมินซ้ำตามกระบวนการของ NAVI (NAVI Re-evaluation)
+  let naviBest = null;
+  if(filteredPlans.length > 0){
+    // NAVI ทำการประเมินซ้ำโดยให้น้ำหนักกับ R:R, ความสอดคล้องของเทรนด์ และคะแนนความมั่นใจจากแผนรวมกัน
+    let scoredPlans = filteredPlans.map(p => {
+      let naviScore = (p.planConfidence * 0.5) + (p.rr * 15 * 0.5);
+      if(dir !== "NONE" && p.type === dir) naviScore += 10; // โบนัสถ้าสอดคล้องกับทิศทางหลัก
+      return { ...p, naviScore: round(naviScore, 1) };
+    });
+
+    // เรียงลำดับหาแผนที่ได้คะแนน NAVI สูงสุด
+    scoredPlans.sort((a,b) => b.naviScore - a.naviScore);
+    naviBest = scoredPlans[0];
+  }
+
+  // แสดงผล NAVI Tab
+  if(!naviBest){
+    naviResult.innerHTML=`<div class="result-box yellow">⚠️ ไม่มีแผนใดผ่านเกณฑ์การประเมินซ้ำของ NAVI (ต่ำกว่าเกณฑ์ ${minConfidence}%)</div>`;
+  } else {
+    naviResult.innerHTML=`
+      <div class="plan-card" style="border-left-color:${naviBest.type==="BUY"?"#10b981":"#ef4444"}">
+        <div><b>🧭 NAVI RE-EVALUATION BEST SETUP</b> <span class="badge">คะแนนประเมินซ้ำ: ${naviBest.naviScore} pts</span></div>
+        <div class="result-box">
+          <b>${naviBest.title}</b><br>
+          • ความมั่นใจเบื้องต้นจาก Plan: <b>${naviBest.planConfidence}%</b><br>
+          • ผลประเมินซ้ำโดย NAVI: <b class="success">ผ่านเกณฑ์ความน่าจะเป็นสูงสุด</b><br><br>
+          🎯 Entry: <b>$${naviBest.entry}</b><br>
+          🛑 SL: <b class="danger">$${naviBest.sl}</b><br>
+          💰 TP: <b class="success">$${naviBest.tp}</b><br>
+          📊 R:R Ratio: <b class="yellow">1:${naviBest.rr}</b>
+        </div>
+        <div class="result-box">💡 <b>คำแนะนำจาก NAVI:</b> แผนนี้ผ่านการกลั่นกรองซ้ำเรียบร้อยแล้ว ให้รอราคาวิ่งเข้าโซน Entry พร้อมบริหารความเสี่ยงอย่างเคร่งครัด</div>
+      </div>`;
+  }
+
+  saveState({high,low,price,spread,confidence:minConfidence,direction:inpDir.value});
+  systemStatus.textContent = naviBest ? "✅ ประเมินซ้ำสำเร็จ" : "⚠️ ตรวจสอบแผน";
+  switchTab(filteredPlans.length ? "plan" : "navi");
+}
+
+function saveState(extra={}){
+  try{localStorage.setItem(STORAGE_KEY,JSON.stringify({high:inpHigh.value,low:inpLow.value,price:inpPrice.value,spread:inpSpread.value,confidence:inpTrend.value,direction:inpDir.value,...extra,timestamp:Date.now()}))}catch(e){}
+}
+function loadState(){
+  try{
+    const d=JSON.parse(localStorage.getItem(STORAGE_KEY)||"null");if(!d)return;
+    if(d.high)inpHigh.value=d.high;if(d.low)inpLow.value=d.low;if(d.price)inpPrice.value=d.price;
+    if(d.spread)inpSpread.value=d.spread;if(d.confidence)inpTrend.value=d.confidence;
+    if(d.direction&&["AUTO","UP","DOWN","NONE"].includes(d.direction))inpDir.value=d.direction;
+    lastPrice=Number(d.price)||null;autoDetectSettings();
+  }catch(e){}
+}
+function startAutoRefresh(){clearInterval(autoRefreshTimer);autoRefreshTimer=setInterval(()=>{if(!document.hidden)fetchPrice()},60000)}
+function loadTradingView(){
+  const s=document.createElement("script");s.src="https://s3.tradingview.com/tv.js";s.onload=()=>{
+    if(window.TradingView)new TradingView.widget({container_id:"tv_chart",autosize:true,symbol:"OANDA:XAUUSD",interval:"1",timezone:"Asia/Bangkok",theme:"dark",style:"1",locale:"th",enable_publishing:false,allow_symbol_change:true,calendar:false});
+  };document.head.appendChild(s);
+}
+document.addEventListener("DOMContentLoaded",()=>{loadState();loadTradingView();startAutoRefresh();systemStatus.textContent="✅ พร้อมปฏิบัติการ";setStatus("✅ พร้อม — กดดึงราคาปัจจุบัน","ok")});
+document.addEventListener("visibilitychange",()=>document.hidden?clearInterval(autoRefreshTimer):startAutoRefresh());
+</script>
+</body>
+</html>
